@@ -1,0 +1,41 @@
+# Render Blueprint Specification for Blast Cluster
+# Architecture: App -> Blast Render Cluster -> Supabase
+# Authors: rayzien and pheonix14
+
+services:
+  # Primary Blast Gateway Web Service
+  - type: web
+    name: blast-gateway
+    env: docker
+    plan: starter
+    dockerfilePath: Dockerfile
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: BLAST_HOST
+        value: 0.0.0.0
+      - key: BLAST_PORT
+        value: 8080
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: BLAST_API_KEYS
+        sync: false
+      - key: BLAST_MAX_WORKERS
+        value: 4
+      - key: BLAST_RATE_LIMIT_RPS
+        value: 30.0
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: blast-redis
+          property: connectionString
+
+  # Shared Redis Instance for Cross-Instance Interconnect and Queue Synchronization
+  - type: redis
+    name: blast-redis
+    plan: starter
+    ipAllowList: [] # internal access only

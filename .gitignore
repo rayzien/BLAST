@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Blast local runtime files
+*.db
+*.db-wal
+*.db-shm
+*.log
+.env
+
+# Docker and local storage
+redis_data/

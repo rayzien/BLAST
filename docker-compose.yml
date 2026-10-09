@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  # Shared Distributed Redis Queue
+  blast-redis:
+    image: redis:7-alpine
+    container_name: blast-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  # Blast Gateway Node 1
+  blast-node-1:
+    build: .
+    container_name: blast-node-1
+    ports:
+      - "8081:8080"
+    environment:
+      - BLAST_HOST=0.0.0.0
+      - BLAST_PORT=8080
+      - BLAST_NODE_ID=blast-node-1
+      - REDIS_URL=redis://blast-redis:6379/0
+      - BLAST_PEER_URLS=http://blast-node-2:8080
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
+      - BLAST_API_KEYS=${BLAST_API_KEYS:-blast-secret-key-1}
+      - BLAST_MAX_WORKERS=4
+      - BLAST_RATE_LIMIT_RPS=25.0
+    depends_on:
+      - blast-redis
+    restart: unless-stopped
+
+  # Blast Gateway Node 2 (Interconnected Cluster Peer)
+  blast-node-2:
+    build: .
+    container_name: blast-node-2
+    ports:
+      - "8082:8080"
+    environment:
+      - BLAST_HOST=0.0.0.0
+      - BLAST_PORT=8080
+      - BLAST_NODE_ID=blast-node-2
+      - REDIS_URL=redis://blast-redis:6379/0
+      - BLAST_PEER_URLS=http://blast-node-1:8080
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
+      - BLAST_API_KEYS=${BLAST_API_KEYS:-blast-secret-key-1}
+      - BLAST_MAX_WORKERS=4
+      - BLAST_RATE_LIMIT_RPS=25.0
+    depends_on:
+      - blast-redis
+    restart: unless-stopped
+
+volumes:
+  redis_data:

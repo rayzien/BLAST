@@ -1,0 +1,244 @@
+"""Flask application entrypoint and HTTP API routing for Blast.
+Guaranteed zero emojis.
+"""
+
+import json
+from typing import Optional, Any
+from flask import Flask, request, jsonify, Response
+from config import BlastConfig, config as default_config
+from security.auth import Authenticator
+from security.rate_limiter import TokenBucketRateLimiter
+from security.firewall import Firewall
+from job_queue.manager import QueueManager
+from supabase.client import SupabaseClient
+from supabase.proxy import ProxyHandler
+from worker.supervisor import WorkerSupervisor
+from cluster.peer_manager import ClusterManager
+from logger import logger
+
+
+def create_app(
+    cfg: Optional[BlastConfig] = None,
+    storage: Optional[Any] = None,
+    supabase_client: Optional[SupabaseClient] = None,
+    worker_supervisor: Optional[WorkerSupervisor] = None,
+    cluster_manager: Optional[ClusterManager] = None,
+) -> Flask:
+    """Application factory for Blast API server."""
+    app = Flask(__name__)
+    cfg = cfg or default_config
+
+    # Initialize specialized subsystems
+    authenticator = Authenticator(cfg)
+    rate_limiter = TokenBucketRateLimiter(cfg)
+    firewall = Firewall(cfg)
+    queue_manager = QueueManager(cfg, storage=storage)
+    supabase_client = supabase_client or SupabaseClient(cfg)
+    proxy_handler = ProxyHandler(cfg, client=supabase_client, firewall=firewall)
+    cluster_mgr = cluster_manager or ClusterManager(cfg)
+
+    # Attach components to app context
+    app.config["BLAST_SUPERVISOR"] = worker_supervisor
+    app.config["BLAST_STORAGE"] = queue_manager.storage
+    app.config["BLAST_QUEUE_MANAGER"] = queue_manager
+    app.config["BLAST_CLUSTER_MANAGER"] = cluster_mgr
+
+    # -------------------------------------------------------------
+    # Security Middleware
+    # -------------------------------------------------------------
+    @app.before_request
+    def security_check():
+        # Public endpoints (health check and cluster heartbeats)
+        if request.path in ("/health", "/") or request.path.startswith("/v1/cluster/heartbeat"):
+            return None
+
+        # 1. Firewall validation (methods, payload size, path traversal)
+        content_len = request.content_length
+        is_valid, err_msg = firewall.validate_request(
+            method=request.method,
+            path=request.path,
+            content_length=content_len,
+        )
+        if not is_valid:
+            logger.security(f"Blocked request {request.method} {request.path}: {err_msg}")
+            return jsonify({"error": "Security check failed", "details": err_msg}), 400
+
+        # 2. Authentication check
+        req_headers = dict(request.headers)
+        query_dict = dict(request.args)
+        is_auth, client_id, auth_err = authenticator.authenticate(req_headers, query_dict)
+        if not is_auth:
+            logger.security(f"Authentication failed for {request.remote_addr}: {auth_err}")
+            return jsonify({"error": "Unauthorized", "details": auth_err}), 401
+
+        request.environ["blast_client_id"] = client_id or "anonymous"
+
+        # 3. Rate Limiting check
+        identifier = client_id or request.remote_addr or "client-default"
+        allowed, retry_after, remaining = rate_limiter.check(identifier)
+        if not allowed:
+            logger.security(f"Rate limit exceeded for {identifier} (Retry-After: {retry_after:.1f}s)")
+            resp = jsonify({
+                "error": "Rate limit exceeded",
+                "retry_after_seconds": round(retry_after, 2),
+            })
+            resp.status_code = 429
+            resp.headers["Retry-After"] = str(int(retry_after) + 1)
+            return resp
+
+        return None
+
+    # -------------------------------------------------------------
+    # General Endpoints
+    # -------------------------------------------------------------
+    @app.route("/health", methods=["GET"])
+    def health():
+        sup: Optional[WorkerSupervisor] = app.config.get("BLAST_SUPERVISOR")
+        return jsonify({
+            "status": "healthy",
+            "service": "blast",
+            "node_id": cfg.NODE_ID,
+            "workers_running": sup.is_alive() if sup else False,
+            "supabase_configured": bool(cfg.SUPABASE_URL),
+        })
+
+    # -------------------------------------------------------------
+    # Cluster Endpoints (Interconnected Render instances)
+    # -------------------------------------------------------------
+    @app.route("/v1/cluster/nodes", methods=["GET"])
+    def cluster_nodes():
+        """List active connected Blast nodes in the cluster."""
+        return jsonify({
+            "node_id": cfg.NODE_ID,
+            "nodes": cluster_mgr.list_nodes(),
+        }), 200
+
+    @app.route("/v1/cluster/heartbeat", methods=["POST"])
+    def cluster_heartbeat():
+        """Receive peer heartbeat."""
+        data = request.get_json(silent=True) or {}
+        peer_id = data.get("node_id")
+        peer_url = data.get("url")
+        if peer_id and peer_url:
+            cluster_mgr.record_heartbeat(peer_id, peer_url, meta=data)
+            return jsonify({"status": "acknowledged", "node_id": cfg.NODE_ID}), 200
+        return jsonify({"error": "Missing node_id or url"}), 400
+
+    @app.route("/v1/cluster/health", methods=["GET"])
+    def cluster_health():
+        nodes = cluster_mgr.list_nodes()
+        return jsonify({
+            "cluster_status": "operational",
+            "total_nodes": len(nodes),
+            "nodes": nodes,
+        }), 200
+
+    # -------------------------------------------------------------
+    # Queue Endpoints (app > blast [queue] > supabase)
+    # -------------------------------------------------------------
+    @app.route("/v1/queue/<path:target_path>", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+    def enqueue_request(target_path: str):
+        """Enqueue an asynchronous request to be processed reliably to Supabase."""
+        client_id = request.environ.get("blast_client_id", "anonymous")
+        idempotency_key = request.headers.get("X-Idempotency-Key") or request.headers.get("Idempotency-Key")
+
+        priority = 0
+        try:
+            if "X-Priority" in request.headers:
+                priority = int(request.headers["X-Priority"])
+        except ValueError:
+            pass
+
+        method = request.args.get("_method", request.method)
+        clean_path = f"/{target_path.lstrip('/')}"
+        sanitized_headers = firewall.sanitize_headers(dict(request.headers))
+        body = request.get_data(as_text=True) if request.data else None
+
+        job, is_new = queue_manager.enqueue(
+            method=method,
+            path=clean_path,
+            client_id=client_id,
+            headers=sanitized_headers,
+            params=dict(request.args),
+            body=body,
+            idempotency_key=idempotency_key,
+            priority=priority,
+        )
+
+        logger.queue(f"Enqueued request {method} {clean_path} -> job {job.id} (new={is_new})")
+
+        return jsonify({
+            "status": "queued" if is_new else "duplicate_idempotent",
+            "job_id": job.id,
+            "is_new": is_new,
+            "idempotency_key": idempotency_key,
+            "poll_url": f"/v1/jobs/{job.id}",
+            "job": job.to_dict(),
+        }), 202
+
+    @app.route("/v1/jobs/<job_id>", methods=["GET"])
+    def get_job(job_id: str):
+        """Get the current execution status and response of a queued job."""
+        job = queue_manager.get_job(job_id)
+        if not job:
+            return jsonify({"error": "Job not found", "job_id": job_id}), 404
+
+        data = job.to_dict()
+        if job.response_body:
+            try:
+                data["parsed_response_body"] = json.loads(job.response_body)
+            except Exception:
+                pass
+
+        return jsonify(data), 200
+
+    @app.route("/v1/queue/stats", methods=["GET"])
+    def queue_stats():
+        """Retrieve queue metrics and health."""
+        return jsonify(queue_manager.get_stats()), 200
+
+    @app.route("/v1/dlq", methods=["GET"])
+    def list_dlq():
+        """List dead letter queue items."""
+        limit = min(int(request.args.get("limit", 50)), 100)
+        offset = int(request.args.get("offset", 0))
+        items = queue_manager.storage.list_dlq(limit=limit, offset=offset)
+        return jsonify({"items": items, "count": len(items)}), 200
+
+    @app.route("/v1/dlq/<job_id>/retry", methods=["POST"])
+    def retry_dlq(job_id: str):
+        """Retry a job in the dead letter queue."""
+        success = queue_manager.retry_dlq_job(job_id)
+        if not success:
+            return jsonify({"error": "Job not found in DLQ", "job_id": job_id}), 404
+        return jsonify({"status": "requeued", "job_id": job_id}), 200
+
+    # -------------------------------------------------------------
+    # Proxy Endpoints (app > blast [proxy] > supabase)
+    # -------------------------------------------------------------
+    @app.route("/v1/proxy/<path:target_path>", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+    def proxy_request(target_path: str):
+        """Synchronously forward request through Blast security layer directly to Supabase."""
+        clean_path = f"/{target_path.lstrip('/')}"
+        body = request.get_data(as_text=True) if request.data else None
+
+        status_code, resp_headers, resp_body = proxy_handler.forward(
+            method=request.method,
+            supabase_path=clean_path,
+            incoming_headers=dict(request.headers),
+            params=dict(request.args),
+            body=body,
+        )
+
+        flask_resp = Response(
+            resp_body,
+            status=status_code,
+            content_type=resp_headers.get("content-type", "application/json"),
+        )
+        for k, v in resp_headers.items():
+            if k.lower() in ("preference-applied", "content-range", "x-total-count"):
+                flask_resp.headers[k] = v
+
+        return flask_resp
+
+    return app
