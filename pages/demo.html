@@ -757,7 +757,63 @@
                     </div>
                 </div>
 
-                <!-- Section 4: Actions & Persistence Bar -->
+                <!-- Section 4: Awake Engine 24/7 Keep-Alive Daemon -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-chakra text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span>4. AWAKE ENGINE 24/7 (RENDER &amp; SUPABASE ANTI-SLEEP)</span>
+                        </h4>
+                        <span id="awake-engine-status-badge" class="font-sharetech text-[10px] px-2.5 py-1 bg-emerald-950/80 text-emerald-300 border border-emerald-500/50 rounded font-bold uppercase">
+                            24/7 ACTIVE
+                        </span>
+                    </div>
+
+                    <div class="bg-slate-950 border border-slate-800 p-5 rounded-xl space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-4">
+                            <div>
+                                <p class="font-inter text-xs text-slate-300 font-semibold">
+                                    Automatic Anti-Sleep Heartbeat Daemon
+                                </p>
+                                <p class="font-inter text-[11px] text-slate-400 mt-0.5">
+                                    Sends periodic background probes (every 9 minutes) to prevent Render free-tier containers from spinning down (15-min timeout) and Supabase free-tier projects from pausing due to inactivity.
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="triggerAwakePingNow()" id="btn-awake-ping" class="font-chakra text-[11px] px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded transition font-semibold flex items-center gap-1.5">
+                                    TRIGGER KEEP-ALIVE PING NOW
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-800/80">
+                            <div class="flex items-center gap-3 bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                                <input type="checkbox" id="setting-awake-enabled" checked class="w-4 h-4 rounded text-cyan-500 focus:ring-0 bg-slate-950 border-slate-700">
+                                <label for="setting-awake-enabled" class="font-space text-xs text-slate-300 cursor-pointer font-bold">
+                                    ENABLE 24/7 AWAKE ENGINE
+                                </label>
+                            </div>
+                            <div>
+                                <label for="setting-awake-interval" class="font-space text-xs font-semibold text-slate-300 uppercase block mb-1">
+                                    Ping Interval (seconds)
+                                </label>
+                                <input type="number" id="setting-awake-interval" min="30" max="86400" value="540" class="font-fira text-xs bg-slate-900 border border-slate-700 text-cyan-300 px-3 py-2 rounded w-full focus:outline-none focus:border-cyan-400">
+                                <p class="font-inter text-[10px] text-slate-500 mt-1">Default: 540s (9 mins, safely below 15-min Render limit)</p>
+                            </div>
+                            <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800 flex flex-col justify-between">
+                                <span class="font-space text-[10px] text-slate-400 uppercase font-semibold">Targets Monitored</span>
+                                <div class="flex items-center gap-2 text-xs font-mono font-bold mt-1">
+                                    <span class="text-emerald-400" id="awake-target-render">Render Self</span> &bull;
+                                    <span class="text-cyan-400" id="awake-target-supa">Supabase</span> &bull;
+                                    <span class="text-amber-400" id="awake-target-peers">Peers</span>
+                                </div>
+                                <span class="text-[10px] text-slate-500 font-inter mt-1" id="awake-last-ping-info">Last probe: active</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 5: Actions & Persistence Bar -->
                 <div class="bg-slate-950 border border-cyan-500/30 p-5 rounded-xl flex flex-wrap items-center justify-between gap-4">
                     <div class="space-y-1">
                         <div class="font-space text-xs font-bold text-slate-200 uppercase flex items-center gap-2">
@@ -988,10 +1044,60 @@
                 if (document.getElementById('setting-rate-burst')) document.getElementById('setting-rate-burst').value = data.rate_limit_burst || 50;
                 if (document.getElementById('env-file-badge')) document.getElementById('env-file-badge').innerText = data.env_path || '.env';
 
+                if (document.getElementById('setting-awake-enabled')) {
+                    document.getElementById('setting-awake-enabled').checked = (data.awake_enabled !== false);
+                }
+                if (document.getElementById('setting-awake-interval')) {
+                    document.getElementById('setting-awake-interval').value = data.awake_interval_seconds || 540;
+                }
+
                 if (badge) badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400"></span> SYNCED';
+                refreshAwakeTelemetry();
             } catch (err) {
                 if (badge) badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span> OFFLINE / DEFAULT';
                 showSettingsAlert('error', `Failed loading settings from gateway: ${err.message}. Ensure gateway is connected.`);
+            }
+        }
+
+        async function refreshAwakeTelemetry() {
+            const host = getActiveHost();
+            try {
+                const res = await fetch(`${host}/v1/awake`);
+                if (!res.ok) return;
+                const d = await res.json();
+                const badge = document.getElementById('awake-engine-status-badge');
+                if (badge) {
+                    if (d.enabled && d.is_running) {
+                        badge.className = 'font-sharetech text-[10px] px-2.5 py-1 bg-emerald-950/80 text-emerald-300 border border-emerald-500/50 rounded font-bold uppercase';
+                        badge.innerText = `24/7 ACTIVE (${d.interval_seconds}s)`;
+                    } else if (d.enabled) {
+                        badge.className = 'font-sharetech text-[10px] px-2.5 py-1 bg-amber-950/80 text-amber-300 border border-amber-500/50 rounded font-bold uppercase';
+                        badge.innerText = 'IDLE';
+                    } else {
+                        badge.className = 'font-sharetech text-[10px] px-2.5 py-1 bg-red-950/80 text-red-300 border border-red-500/50 rounded font-bold uppercase';
+                        badge.innerText = 'DISABLED';
+                    }
+                }
+                const info = document.getElementById('awake-last-ping-info');
+                if (info) {
+                    info.innerText = d.last_round_time ? `Last probe: ${new Date(d.last_round_time).toLocaleTimeString()} (Next in: ${Math.round(d.next_ping_in_seconds)}s)` : 'No probes recorded yet';
+                }
+            } catch (e) {}
+        }
+
+        async function triggerAwakePingNow() {
+            const host = getActiveHost();
+            const btn = document.getElementById('btn-awake-ping');
+            if (btn) btn.innerText = 'PROBING TARGETS...';
+            try {
+                const res = await fetch(`${host}/v1/awake/trigger`, { method: 'POST' });
+                const d = await res.json();
+                showSettingsAlert('success', `Keep-alive probe round executed successfully! Targets probed in ${d.data?.duration_ms || 0}ms.`);
+                refreshAwakeTelemetry();
+            } catch (err) {
+                showSettingsAlert('error', `Probe error: ${err.message}`);
+            } finally {
+                if (btn) btn.innerText = 'TRIGGER KEEP-ALIVE PING NOW';
             }
         }
 
@@ -1011,6 +1117,8 @@
                 max_workers: parseInt(document.getElementById('setting-workers')?.value || '4', 10),
                 rate_limit_rps: parseFloat(document.getElementById('setting-rate-rps')?.value || '20'),
                 rate_limit_burst: parseInt(document.getElementById('setting-rate-burst')?.value || '50', 10),
+                awake_enabled: document.getElementById('setting-awake-enabled') ? document.getElementById('setting-awake-enabled').checked : true,
+                awake_interval_seconds: parseFloat(document.getElementById('setting-awake-interval')?.value || '540'),
             };
 
             if (!payload.blast_api_key_1 && !payload.blast_api_key_2) {
@@ -1053,6 +1161,7 @@
                     saveConnectionParams();
                 }
 
+                refreshAwakeTelemetry();
                 // Refresh health and metrics
                 reconnectGateway();
             } catch (err) {

@@ -29,6 +29,8 @@ services:
       - BLAST_API_KEYS=${BLAST_API_KEYS:-blast-secret-key-1}
       - BLAST_MAX_WORKERS=4
       - BLAST_RATE_LIMIT_RPS=25.0
+      - BLAST_AWAKE_ENABLED=true
+      - BLAST_AWAKE_INTERVAL_SECONDS=540.0
     depends_on:
       - blast-redis
     restart: unless-stopped
@@ -51,6 +53,8 @@ services:
       - BLAST_API_KEYS=${BLAST_API_KEYS:-blast-secret-key-1}
       - BLAST_MAX_WORKERS=4
       - BLAST_RATE_LIMIT_RPS=25.0
+      - BLAST_AWAKE_ENABLED=true
+      - BLAST_AWAKE_INTERVAL_SECONDS=540.0
     depends_on:
       - blast-redis
     restart: unless-stopped

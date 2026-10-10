@@ -191,6 +191,7 @@ class TestMeshServerEndpoints(unittest.TestCase):
             DB_PATH=self.db_path,
             SERVER_LINKS=["https://peer-blast.render.com"],
             MESH_ROUTING_ENABLED=True,
+            TESTING=True,
         )
         self.storage = SQLiteQueueStorage(self.db_path)
         self.queue_mgr = QueueManager(self.cfg, storage=self.storage)
@@ -203,6 +204,10 @@ class TestMeshServerEndpoints(unittest.TestCase):
         self.client = self.app.test_client()
 
     def tearDown(self):
+        if "BLAST_AWAKE_ENGINE" in self.app.config and self.app.config["BLAST_AWAKE_ENGINE"]:
+            self.app.config["BLAST_AWAKE_ENGINE"].stop()
+        if "BLAST_CLUSTER_MANAGER" in self.app.config and self.app.config["BLAST_CLUSTER_MANAGER"]:
+            self.app.config["BLAST_CLUSTER_MANAGER"].stop()
         self.mesh_router.stop()
         self.storage.close()
         self.tmp_dir.cleanup()

@@ -19,6 +19,7 @@ from worker.supervisor import WorkerSupervisor
 from cluster.peer_manager import ClusterManager
 from mesh.router import SmartMeshRouter
 from persistence_manager import PersistenceManager
+from awake.engine import AwakeEngine
 from logger import logger
 
 
@@ -30,6 +31,7 @@ def create_app(
     cluster_manager: Optional[ClusterManager] = None,
     security_checker: Optional[SecurityChecker] = None,
     mesh_router: Optional[SmartMeshRouter] = None,
+    awake_engine: Optional[AwakeEngine] = None,
 ) -> Flask:
     """Application factory for Blast API server."""
     app = Flask(__name__)
@@ -45,7 +47,13 @@ def create_app(
     proxy_handler = ProxyHandler(cfg, client=supabase_client, firewall=firewall)
     cluster_mgr = cluster_manager or ClusterManager(cfg)
     smart_mesh = mesh_router or SmartMeshRouter(cfg)
-    smart_mesh.start()
+    if not getattr(cfg, "TESTING", False) and os.getenv("BLAST_TESTING") != "true":
+        smart_mesh.start()
+
+    # Initialize 24/7 Anti-Sleep Awake Engine
+    awake = awake_engine or AwakeEngine(cfg)
+    if cfg.AWAKE_ENABLED and not getattr(cfg, "TESTING", False) and os.getenv("BLAST_TESTING") != "true":
+        awake.start()
 
     # Initialize syncable persistence manager
     persistence_mgr = PersistenceManager(
@@ -53,6 +61,7 @@ def create_app(
         authenticator=authenticator,
         supabase_client=supabase_client,
         cluster_manager=cluster_mgr,
+        awake_engine=awake,
     )
 
     # Attach components to app context
@@ -63,14 +72,15 @@ def create_app(
     app.config["BLAST_SECURITY_CHECKER"] = sec_checker
     app.config["BLAST_MESH_ROUTER"] = smart_mesh
     app.config["BLAST_PERSISTENCE_MANAGER"] = persistence_mgr
+    app.config["BLAST_AWAKE_ENGINE"] = awake
 
     # -------------------------------------------------------------
     # Security Middleware
     # -------------------------------------------------------------
     @app.before_request
     def security_check():
-        # Public endpoints (health check, web GUI in pages/, cluster/mesh heartbeats, live logs, test pathway, settings)
-        if request.path in ("/health", "/", "/gui", "/v1/test/pathway", "/v1/settings") or request.path.startswith(("/v1/cluster/heartbeat", "/pages", "/v1/logs", "/v1/settings")):
+        # Public endpoints (health check, web GUI in pages/, cluster/mesh heartbeats, live logs, test pathway, settings, awake engine)
+        if request.path in ("/health", "/", "/gui", "/v1/test/pathway", "/v1/settings", "/v1/awake", "/awake") or request.path.startswith(("/v1/cluster/heartbeat", "/pages", "/v1/logs", "/v1/settings", "/v1/awake")):
             return None
 
         # 1. Firewall validation (methods, payload size, path traversal)
@@ -565,5 +575,47 @@ def create_app(
         except Exception as exc:
             logger.error("SETTINGS", f"Error saving settings: {exc}")
             return jsonify({"error": "Persistence Error", "details": str(exc)}), 500
+
+    # -------------------------------------------------------------
+    # Awake Engine (24/7 Keep-Alive Daemon) Endpoints
+    # -------------------------------------------------------------
+    @app.route("/v1/awake", methods=["GET"])
+    @app.route("/awake", methods=["GET"])
+    def get_awake_status():
+        """Return live telemetry from Awake Engine."""
+        return jsonify(awake.get_status()), 200
+
+    @app.route("/v1/awake/trigger", methods=["POST"])
+    def trigger_awake_ping():
+        """Trigger an immediate keep-alive ping round across all targets."""
+        res = awake.ping_all()
+        return jsonify({
+            "status": "success",
+            "message": "Keep-alive round executed.",
+            "data": res,
+        }), 200
+
+    @app.route("/v1/awake/config", methods=["POST"])
+    def update_awake_config():
+        """Update Awake Engine runtime parameters (enabled, interval)."""
+        payload = request.get_json(silent=True) or {}
+        enabled = payload.get("enabled")
+        interval = payload.get("interval_seconds")
+        ping_self = payload.get("ping_self")
+        ping_supabase = payload.get("ping_supabase")
+        ping_peers = payload.get("ping_peers")
+
+        awake.update_config(
+            enabled=enabled,
+            interval_seconds=interval,
+            ping_self=ping_self,
+            ping_supabase=ping_supabase,
+            ping_peers=ping_peers,
+        )
+        return jsonify({
+            "status": "success",
+            "message": "Awake Engine configuration updated.",
+            "current_status": awake.get_status(),
+        }), 200
 
     return app

@@ -71,14 +71,19 @@ blast/
 |-- supabase/
 |   |-- client.py               # Pooled HTTP client with auth injection and latency tracking
 |   `-- proxy.py                # Synchronous pass-through proxy
+|-- awake/
+|   |-- __init__.py             # Awake Engine module exports
+|   `-- engine.py               # 24/7 Anti-Sleep Keep-Alive daemon for Render & Supabase
 |-- sdk/
 |   `-- blast_client.py         # Python SDK for client apps
 |-- persistence_manager.py      # Atomic settings.json & .env syncable persistence engine
 |-- settings.json               # Persistent configuration for private repositories
+|-- GEMINI_INTEGRATION_PROMPT.md# Gemini AI prompt for automated app integration
 `-- tests/
     |-- test_blast.py           # Core gateway, security, and queue test suite
     |-- test_mesh.py            # Mesh routing, loop prevention, and failover test suite
-    `-- test_settings.py        # Settings API and crash resilience persistence test suite
+    |-- test_settings.py        # Settings API and crash resilience persistence test suite
+    `-- test_awake.py           # Awake Engine anti-sleep background prober test suite
 ```
 
 ---
@@ -203,9 +208,47 @@ curl http://localhost:8080/v1/queue/stats \
 
 ---
 
+## Awake Engine 24/7 (Render & Supabase Anti-Sleep)
+
+Free-tier cloud containers (like Render) spin down after 15 minutes of inactivity, and free Supabase projects pause after 7 days of inactivity.
+
+Blast features an autonomous background **Awake Engine** (`awake/`):
+- **Render Anti-Sleep**: Automatically issues HTTP probes to `PUBLIC_URL/health` every 9 minutes (540s), resetting Render's inbound inactivity countdown so the container remains online 24/7.
+- **Supabase Anti-Pause**: Sends authenticated health check queries to Supabase (`/auth/v1/health` and `/rest/v1`) in each cycle to prevent database freezing.
+- **Cluster Peer Ping**: Verifies reachability of interconnected cluster nodes.
+- **Web UI Controls**: Access Section 4 in the Settings modal (`/gui`) to toggle Awake Engine, modify intervals, inspect probe targets, or trigger an immediate ping.
+
+API Endpoints:
+```bash
+# Check Awake Engine status and recent probe history
+curl http://localhost:8080/v1/awake
+
+# Trigger an immediate keep-alive round
+curl -X POST http://localhost:8080/v1/awake/trigger
+
+# Update heartbeat interval
+curl -X POST http://localhost:8080/v1/awake/config \
+  -H "Content-Type: application/json" \
+  -d '{"enabled": true, "interval_seconds": 300.0}'
+```
+
+---
+
+## Connecting Apps via Gemini AI
+
+Want your Gemini AI to automatically hook up your Next.js, React, Node, Python, or mobile application to Blast?
+
+See [GEMINI_INTEGRATION_PROMPT.md](GEMINI_INTEGRATION_PROMPT.md) for a ready-to-use prompt that instructs Gemini to:
+1. Reconfigure `@supabase/supabase-js` to point to Blast with `X-Blast-Key`.
+2. Route direct REST queries (`fetch`, `axios`) through Blast security and rate limiting.
+3. Use high-speed asynchronous write queue ingestion (`POST /v1/queue/rest/v1/<table_name>`) for traffic spikes.
+4. Verify end-to-end connectivity and health check status.
+
+---
+
 ## Web GUI
 
-Launch the dashboard with live telemetry and 12 Google/Cyberpunk fonts:
+Launch the dashboard with live telemetry, cyber styling, and real-time settings management:
 ```bash
 blast gui
 ```
@@ -215,7 +258,8 @@ Or open `http://localhost:8080/gui` in your browser.
 
 ## Testing
 
-Run the full test suite (31/31 passing):
+Run the full test suite (46/46 passing):
 ```bash
 python3 -m unittest discover tests
 ```
+

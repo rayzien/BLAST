@@ -49,6 +49,16 @@ if os.path.exists(_settings_json_path):
                 _apply_setting_val("BLAST_HOST", str(_s_data.get("blast_host") or _s_data.get("host")))
             if "mesh_routing_enabled" in _s_data:
                 _apply_setting_val("BLAST_MESH_ROUTING_ENABLED", str(_s_data["mesh_routing_enabled"]).lower())
+            if "awake_enabled" in _s_data:
+                _apply_setting_val("BLAST_AWAKE_ENABLED", str(_s_data["awake_enabled"]).lower())
+            if "awake_interval_seconds" in _s_data:
+                _apply_setting_val("BLAST_AWAKE_INTERVAL_SECONDS", str(_s_data["awake_interval_seconds"]))
+            if "awake_ping_self" in _s_data:
+                _apply_setting_val("BLAST_AWAKE_PING_SELF", str(_s_data["awake_ping_self"]).lower())
+            if "awake_ping_supabase" in _s_data:
+                _apply_setting_val("BLAST_AWAKE_PING_SUPABASE", str(_s_data["awake_ping_supabase"]).lower())
+            if "awake_ping_peers" in _s_data:
+                _apply_setting_val("BLAST_AWAKE_PING_PEERS", str(_s_data["awake_ping_peers"]).lower())
     except Exception:
         pass
 
@@ -120,6 +130,14 @@ class BlastConfig:
     MESH_ROUTING_ENABLED: bool = os.getenv("BLAST_MESH_ROUTING_ENABLED", "true").lower() in ("true", "1", "yes")
 
     DEBUG: bool = os.getenv("BLAST_DEBUG", "false").lower() in ("true", "1", "yes")
+    TESTING: bool = os.getenv("BLAST_TESTING", "false").lower() in ("true", "1", "yes")
+    
+    # 24/7 Keep-Alive Awake Engine (prevents Render 15-min and Supabase 7-day sleep)
+    AWAKE_ENABLED: bool = os.getenv("BLAST_AWAKE_ENABLED", "true").lower() in ("true", "1", "yes")
+    AWAKE_INTERVAL_SECONDS: float = float(os.getenv("BLAST_AWAKE_INTERVAL_SECONDS", "540.0"))
+    AWAKE_PING_SELF: bool = os.getenv("BLAST_AWAKE_PING_SELF", "true").lower() in ("true", "1", "yes")
+    AWAKE_PING_SUPABASE: bool = os.getenv("BLAST_AWAKE_PING_SUPABASE", "true").lower() in ("true", "1", "yes")
+    AWAKE_PING_PEERS: bool = os.getenv("BLAST_AWAKE_PING_PEERS", "true").lower() in ("true", "1", "yes")
 
     # Supabase backend settings
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://ylzpjtzeetnvypvikiqa.supabase.co").rstrip("/")

@@ -25,6 +25,7 @@ class PersistenceManager:
         authenticator: Optional[Any] = None,
         supabase_client: Optional[Any] = None,
         cluster_manager: Optional[Any] = None,
+        awake_engine: Optional[Any] = None,
     ):
         self.cfg = cfg or default_config
         self.env_path = env_path or os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
@@ -32,6 +33,7 @@ class PersistenceManager:
         self.authenticator = authenticator
         self.supabase_client = supabase_client
         self.cluster_manager = cluster_manager
+        self.awake_engine = awake_engine
         self._lock = threading.RLock()
 
     def get_settings(self) -> Dict[str, Any]:
@@ -94,6 +96,8 @@ class PersistenceManager:
                 "rate_limit_burst": self.cfg.RATE_LIMIT_BURST,
                 "mesh_routing_enabled": self.cfg.MESH_ROUTING_ENABLED,
                 "require_api_key": self.cfg.REQUIRE_API_KEY,
+                "awake_enabled": getattr(self.cfg, "AWAKE_ENABLED", True),
+                "awake_interval_seconds": getattr(self.cfg, "AWAKE_INTERVAL_SECONDS", 540.0),
                 "env_path": self.env_path,
                 "settings_json_path": self.settings_json_path,
                 "is_persistent": os.path.exists(self.env_path) or os.path.exists(self.settings_json_path),
@@ -156,6 +160,15 @@ class PersistenceManager:
                 except (ValueError, TypeError):
                     pass
 
+            if "awake_enabled" in payload:
+                env_updates["BLAST_AWAKE_ENABLED"] = str(bool(payload["awake_enabled"])).lower()
+
+            if "awake_interval_seconds" in payload and payload["awake_interval_seconds"] != "":
+                try:
+                    env_updates["BLAST_AWAKE_INTERVAL_SECONDS"] = str(float(payload["awake_interval_seconds"]))
+                except (ValueError, TypeError):
+                    pass
+
             # 2. Atomic disk persistence to .env
             self._write_env_file(env_updates)
 
@@ -173,6 +186,8 @@ class PersistenceManager:
                 "rate_limit_rps": getattr(self.cfg, "RATE_LIMIT_RPS", 20.0),
                 "rate_limit_burst": getattr(self.cfg, "RATE_LIMIT_BURST", 50),
                 "mesh_routing_enabled": getattr(self.cfg, "MESH_ROUTING_ENABLED", True),
+                "awake_enabled": getattr(self.cfg, "AWAKE_ENABLED", True),
+                "awake_interval_seconds": getattr(self.cfg, "AWAKE_INTERVAL_SECONDS", 540.0),
             }
             if "rate_limit_rps" in payload and payload["rate_limit_rps"] != "":
                 try:
@@ -184,6 +199,14 @@ class PersistenceManager:
                     settings_json_payload["max_workers"] = int(payload["max_workers"])
                 except (ValueError, TypeError):
                     pass
+            if "awake_enabled" in payload:
+                settings_json_payload["awake_enabled"] = bool(payload["awake_enabled"])
+            if "awake_interval_seconds" in payload and payload["awake_interval_seconds"] != "":
+                try:
+                    settings_json_payload["awake_interval_seconds"] = float(payload["awake_interval_seconds"])
+                except (ValueError, TypeError):
+                    pass
+
             self._write_settings_json(settings_json_payload)
 
             # 4. Hot-sync in-memory config object
@@ -205,11 +228,20 @@ class PersistenceManager:
                 except (ValueError, TypeError):
                     pass
 
+            if "awake_enabled" in payload:
+                self.cfg.AWAKE_ENABLED = bool(payload["awake_enabled"])
+
+            if "awake_interval_seconds" in payload and payload["awake_interval_seconds"] != "":
+                try:
+                    self.cfg.AWAKE_INTERVAL_SECONDS = float(payload["awake_interval_seconds"])
+                except (ValueError, TypeError):
+                    pass
+
             # Mirror to os.environ
             for k, v in env_updates.items():
                 os.environ[k] = v
 
-            # 4. Hot-sync Authenticator
+            # 5. Hot-sync Authenticator
             if self.authenticator:
                 if hasattr(self.authenticator, "update_keys"):
                     self.authenticator.update_keys(combined_keys)
@@ -217,12 +249,20 @@ class PersistenceManager:
                     self.authenticator.valid_keys = set(combined_keys)
                 logger.security(f"Authenticator hot-synced with {len(combined_keys)} active keys.")
 
-            # 5. Hot-sync Supabase Client
+            # 6. Hot-sync Supabase Client
             if self.supabase_client:
                 self.supabase_client.base_url = sup_url
                 if hasattr(self.supabase_client, "reload_config"):
                     self.supabase_client.reload_config()
                 logger.supabase(f"Supabase Client hot-synced with target URL: {sup_url}")
+
+            # 7. Hot-sync Awake Engine
+            if self.awake_engine:
+                self.awake_engine.update_config(
+                    enabled=self.cfg.AWAKE_ENABLED,
+                    interval_seconds=self.cfg.AWAKE_INTERVAL_SECONDS,
+                )
+                logger.info("AWAKE", f"Awake Engine hot-synced (enabled: {self.cfg.AWAKE_ENABLED}, interval: {self.cfg.AWAKE_INTERVAL_SECONDS}s)")
 
             logger.info("CONFIG", "Persistence Manager: Settings successfully saved and synced across all subsystems.")
 

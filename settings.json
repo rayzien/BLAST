@@ -10,5 +10,7 @@
   "max_workers": 4,
   "rate_limit_rps": 20.0,
   "rate_limit_burst": 50,
-  "mesh_routing_enabled": true
+  "mesh_routing_enabled": true,
+  "awake_enabled": true,
+  "awake_interval_seconds": 540.0
 }

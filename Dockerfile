@@ -19,6 +19,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application source code
 COPY . .
+RUN pip install --no-cache-dir -e .
 
 # Expose Blast gateway port
 EXPOSE 8080

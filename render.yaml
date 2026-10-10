@@ -28,6 +28,10 @@ services:
         value: 4
       - key: BLAST_RATE_LIMIT_RPS
         value: 30.0
+      - key: BLAST_AWAKE_ENABLED
+        value: "true"
+      - key: BLAST_AWAKE_INTERVAL_SECONDS
+        value: "540.0"
       - key: REDIS_URL
         fromService:
           type: redis
