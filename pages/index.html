@@ -126,6 +126,9 @@
             <button onclick="showTab('dlq')" id="tab-dlq" class="nav-tab font-montserrat text-xs tracking-wider py-2.5 px-4 font-semibold uppercase text-slate-400 hover:text-white transition">
                 Failed Jobs
             </button>
+            <button onclick="showTab('success')" id="tab-success" class="nav-tab font-montserrat text-xs tracking-wider py-2.5 px-4 font-semibold uppercase text-slate-400 hover:text-white transition">
+                Success Jobs
+            </button>
             <button onclick="showTab('cluster')" id="tab-cluster" class="nav-tab font-montserrat text-xs tracking-wider py-2.5 px-4 font-semibold uppercase text-slate-400 hover:text-white transition">
                 Server Network
             </button>
@@ -436,7 +439,7 @@
                             Requests that failed after all retry attempts. You can retry them manually from here.
                         </p>
                     </div>
-                    <button onclick="reloadDlqList(); reloadSuccessList();" class="font-chakra text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded transition font-semibold">
+                    <button onclick="reloadDlqList();" class="font-chakra text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded transition font-semibold">
                         REFRESH
                     </button>
                 </div>
@@ -461,6 +464,9 @@
                     </table>
                 </div>
             </div>
+        </div>
+
+        <div id="view-success" class="hidden space-y-6">
 
             <!-- Recent Successes Table -->
             <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5 mt-6">
@@ -973,7 +979,7 @@
         }
 
         function showTab(tabName) {
-            const tabs = ['dashboard', 'console', 'security', 'dlq', 'cluster', 'settings'];
+            const tabs = ['dashboard', 'console', 'security', 'dlq', 'success', 'cluster', 'settings'];
             tabs.forEach(t => {
                 const view = document.getElementById('view-' + t);
                 const btn = document.getElementById('tab-' + t);
@@ -988,6 +994,8 @@
 
             if (tabName === 'dlq') {
                 reloadDlqList();
+            }
+            if (tabName === 'success') {
                 reloadSuccessList();
             }
             if (tabName === 'cluster') reloadClusterGrid();
