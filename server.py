@@ -443,6 +443,12 @@ def create_app(
         """Retrieve queue metrics and health."""
         return jsonify(queue_manager.get_stats()), 200
 
+    @app.route("/v1/queue/analytics", methods=["GET"])
+    def queue_analytics():
+        """Retrieve time-series analytics for queue."""
+        hours = min(int(request.args.get("hours", 1)), 24)
+        return jsonify(queue_manager.get_analytics(hours=hours)), 200
+
     @app.route("/v1/dlq", methods=["GET"])
     def list_dlq():
         """List dead letter queue items."""

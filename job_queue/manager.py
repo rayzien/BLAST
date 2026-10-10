@@ -80,6 +80,12 @@ class QueueManager:
         """Get queue performance and count metrics."""
         return self.storage.get_metrics()
 
+    def get_analytics(self, hours: int = 1) -> Dict[str, Any]:
+        """Get queue time-series analytics."""
+        if hasattr(self.storage, 'get_analytics_timeseries'):
+            return self.storage.get_analytics_timeseries(hours=hours)
+        return {"timeseries": []}
+
     def retry_dlq_job(self, job_id: str) -> bool:
         """Retry a job stored in DLQ."""
         return self.storage.retry_dlq_job(job_id)

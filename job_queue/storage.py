@@ -302,6 +302,56 @@ class SQLiteQueueStorage:
             "total_jobs": sum(counts.values()),
         }
 
+    def get_analytics_timeseries(self, hours: int = 1) -> Dict[str, Any]:
+        """Get time-series analytics (throughput, errors, latency)."""
+        conn = self._get_connection()
+        now = time.time()
+        start_time = now - (hours * 3600)
+        
+        # We will group by minutes. SQLite doesn't have a direct DATETIME from unix epoch without formatting,
+        # but we can do integer division by 60 to group by minute.
+        cursor = conn.execute("""
+            SELECT 
+                CAST(updated_at / 60 AS INTEGER) * 60 as time_bucket,
+                status,
+                COUNT(*) as count,
+                AVG(updated_at - created_at) as avg_latency
+            FROM jobs
+            WHERE updated_at >= ?
+            GROUP BY time_bucket, status
+            ORDER BY time_bucket ASC
+        """, (start_time,))
+        
+        rows = cursor.fetchall()
+        
+        buckets = {}
+        for row in rows:
+            bucket = row["time_bucket"]
+            if bucket not in buckets:
+                buckets[bucket] = {"time": bucket, "success": 0, "failed": 0, "latency_sum": 0.0, "latency_count": 0}
+            
+            st = row["status"]
+            if st == JobStatus.COMPLETED.value:
+                buckets[bucket]["success"] += row["count"]
+                buckets[bucket]["latency_sum"] += (row["avg_latency"] or 0) * row["count"]
+                buckets[bucket]["latency_count"] += row["count"]
+            elif st in (JobStatus.FAILED.value, JobStatus.DEAD_LETTER.value):
+                buckets[bucket]["failed"] += row["count"]
+
+        # Format output
+        timeseries = []
+        for b in sorted(buckets.keys()):
+            data = buckets[b]
+            avg_lat = data["latency_sum"] / data["latency_count"] if data["latency_count"] > 0 else 0
+            timeseries.append({
+                "timestamp": data["time"],
+                "success_count": data["success"],
+                "error_count": data["failed"],
+                "avg_latency_sec": avg_lat
+            })
+            
+        return {"timeseries": timeseries}
+
     def close(self):
         """Close all opened SQLite connections across all threads."""
         with self._lock:

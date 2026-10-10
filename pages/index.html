@@ -12,6 +12,8 @@
     
     <!-- Tailwind CSS for layout utility -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for Advanced Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         /* Font Styles */
@@ -188,6 +190,23 @@
                     </div>
                     <div class="font-russo text-4xl text-rose-400 mt-2" id="val-dlq">0</div>
                     <p class="font-inter text-xs text-slate-500 mt-1">Requests that failed after all retries</p>
+                </div>
+            </div>
+
+            <!-- Advanced Analytics Chart -->
+            <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5 w-full">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+                    <h3 class="font-orbitron text-sm font-bold text-slate-200 tracking-wider uppercase">
+                        Real-Time Analytics
+                    </h3>
+                    <select id="analytics-timeframe" onchange="fetchAnalytics()" class="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1 outline-none focus:border-cyan-500">
+                        <option value="1">Last 1 Hour</option>
+                        <option value="6">Last 6 Hours</option>
+                        <option value="24">Last 24 Hours</option>
+                    </select>
+                </div>
+                <div class="relative w-full h-64">
+                    <canvas id="analyticsChart"></canvas>
                 </div>
             </div>
 
@@ -1297,6 +1316,7 @@
                     document.getElementById('supa-state-val').innerText = data.supabase_configured ? "CONFIGURED" : "NOT SET";
                     
                     fetchQueueMetrics();
+                    fetchAnalytics();
                 } else {
                     throw new Error('HTTP ' + res.status);
                 }
@@ -1493,6 +1513,116 @@
                     `).join('');
                 }
             } catch (e) {}
+        }
+
+        // =========================================================
+        // Analytics Chart Logic
+        // =========================================================
+        let analyticsChartInstance = null;
+
+        async function fetchAnalytics() {
+            const host = getActiveHost();
+            const key = getActiveKey();
+            const view = document.getElementById('view-dashboard');
+            if (view && view.classList.contains('hidden')) return;
+
+            const timeframe = document.getElementById('analytics-timeframe');
+            const hours = timeframe ? timeframe.value : 1;
+            
+            try {
+                const res = await fetch(`${host}/v1/queue/analytics?hours=${hours}`, {
+                    headers: { 'X-Blast-Key': key }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    renderAnalyticsChart(data.timeseries);
+                }
+            } catch (e) {
+                console.error("Analytics fetch error:", e);
+            }
+        }
+
+        function renderAnalyticsChart(timeseries) {
+            const canvas = document.getElementById('analyticsChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            const labels = timeseries.map(d => new Date(d.timestamp * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+            const successData = timeseries.map(d => d.success_count);
+            const errorData = timeseries.map(d => d.error_count);
+            const latencyData = timeseries.map(d => (d.avg_latency_sec * 1000).toFixed(0));
+
+            if (analyticsChartInstance) {
+                analyticsChartInstance.destroy();
+            }
+
+            analyticsChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Success (Count)',
+                            data: successData,
+                            borderColor: '#34d399',
+                            backgroundColor: 'rgba(52, 211, 153, 0.1)',
+                            yAxisID: 'y',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'Failed (Count)',
+                            data: errorData,
+                            borderColor: '#fb7185',
+                            backgroundColor: 'rgba(251, 113, 133, 0.1)',
+                            yAxisID: 'y',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'Avg Latency (ms)',
+                            data: latencyData,
+                            borderColor: '#67e8f9',
+                            borderDash: [5, 5],
+                            yAxisID: 'y1',
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(30, 41, 59, 0.5)' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            grid: { color: 'rgba(30, 41, 59, 0.5)' },
+                            ticks: { color: '#94a3b8' },
+                            title: { display: true, text: 'Requests', color: '#94a3b8' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: '#67e8f9' },
+                            title: { display: true, text: 'Latency (ms)', color: '#67e8f9' }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#cbd5e1' } }
+                    }
+                }
+            });
         }
         async function reloadMeshTopology() {
             const host = getActiveHost();
