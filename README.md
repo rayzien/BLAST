@@ -58,18 +58,26 @@ blast/
 |   `-- manager.py              # Deduplication and queue coordination
 |-- cluster/
 |   `-- peer_manager.py         # Node registration, peer discovery, and heartbeats
+|-- mesh/
+|   |-- models.py               # MeshNode and RouteDecision telemetry scoring
+|   |-- prober.py               # EWMA latency and queue depth background prober
+|   `-- router.py               # SmartMeshRouter with fastest route selection
+|-- pages/
+|   |-- index.html              # Cyberpunk Web GUI with 12 fonts and live telemetry
+|   `-- demo.html               # Mirrored demo dashboard interface
 |-- worker/
 |   |-- dispatcher.py           # Job executor with backoff retry and DLQ
 |   `-- supervisor.py           # Worker thread pool supervisor
 |-- supabase/
-|   |-- client.py               # Pooled HTTP client with auth injection
+|   |-- client.py               # Pooled HTTP client with auth injection and latency tracking
 |   `-- proxy.py                # Synchronous pass-through proxy
 |-- sdk/
 |   `-- blast_client.py         # Python SDK for client apps
 |-- examples/
 |   `-- app_demo.py             # Sample client integration script
 `-- tests/
-    `-- test_blast.py           # Unit and integration test suite
+    |-- test_blast.py           # Core gateway, security, and queue test suite
+    `-- test_mesh.py            # Mesh routing, loop prevention, and failover test suite
 ```
 
 ---
@@ -171,12 +179,22 @@ curl "http://localhost:8080/v1/proxy/rest/v1/orders?select=*" \
   -H "X-Blast-Key: blast-secret-key-1"
 ```
 
-### 4. Cluster Health and Nodes
+### 4. Smart Mesh Fastest Routes
 ```bash
-curl http://localhost:8080/v1/cluster/nodes
+curl http://localhost:8080/v1/mesh/routes
 ```
 
-### 5. Queue Statistics
+### 5. Live Pathway Diagnostic Test
+```bash
+curl -X POST http://localhost:8080/v1/test/pathway
+```
+
+### 6. Live Telemetry Logs
+```bash
+curl "http://localhost:8080/v1/logs?limit=50&component=PATHWAY"
+```
+
+### 7. Queue Statistics
 ```bash
 curl http://localhost:8080/v1/queue/stats \
   -H "X-Blast-Key: blast-secret-key-1"
@@ -184,9 +202,19 @@ curl http://localhost:8080/v1/queue/stats \
 
 ---
 
+## Web GUI
+
+Launch the dashboard with live telemetry and 12 Google/Cyberpunk fonts:
+```bash
+blast gui
+```
+Or open `http://localhost:8080/gui` in your browser.
+
+---
+
 ## Testing
 
-Run the test suite:
+Run the full test suite (31/31 passing):
 ```bash
-python3 -m unittest tests/test_blast.py
+python3 -m unittest discover tests
 ```
