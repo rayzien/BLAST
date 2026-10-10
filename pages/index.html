@@ -611,8 +611,8 @@
                             <div class="relative">
                                 <input type="text" id="setting-key-1" placeholder="blast-secret-key-1" class="font-fira text-xs bg-slate-900 border border-slate-700 text-cyan-300 pl-3 pr-16 py-2 rounded w-full focus:outline-none focus:border-cyan-400">
                                 <div class="absolute right-1 top-1 flex items-center gap-1">
-                                    <button type="button" onclick="toggleFieldVis('setting-key-1', this)" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Toggle visibility">&#128065;</button>
-                                    <button type="button" onclick="copyFieldValue('setting-key-1')" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Copy key">&#128203;</button>
+                                    <button type="button" onclick="toggleFieldVis('setting-key-1', this)" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Toggle visibility">[SHOW]</button>
+                                    <button type="button" onclick="copyFieldValue('setting-key-1')" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Copy key">[COPY]</button>
                                 </div>
                             </div>
                         </div>
@@ -629,8 +629,8 @@
                             <div class="relative">
                                 <input type="text" id="setting-key-2" placeholder="blast-dev-key" class="font-fira text-xs bg-slate-900 border border-slate-700 text-slate-200 pl-3 pr-16 py-2 rounded w-full focus:outline-none focus:border-cyan-400">
                                 <div class="absolute right-1 top-1 flex items-center gap-1">
-                                    <button type="button" onclick="toggleFieldVis('setting-key-2', this)" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Toggle visibility">&#128065;</button>
-                                    <button type="button" onclick="copyFieldValue('setting-key-2')" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Copy key">&#128203;</button>
+                                    <button type="button" onclick="toggleFieldVis('setting-key-2', this)" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Toggle visibility">[SHOW]</button>
+                                    <button type="button" onclick="copyFieldValue('setting-key-2')" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Copy key">[COPY]</button>
                                 </div>
                             </div>
                         </div>
@@ -649,13 +649,11 @@
                             <p class="font-inter text-[11px] text-amber-200/80">
                                 <strong>Common shared key</strong> so all other Blast servers in your network or Render cluster can authenticate and interconnect with this instance.
                             </p>
-                            <div class="relative">
-                                <input type="text" id="setting-cluster-secret" placeholder="blast-cluster-mesh-secret-key" class="font-fira text-xs bg-slate-900 border border-amber-500/50 text-amber-200 pl-3 pr-24 py-2 rounded w-full focus:outline-none focus:border-amber-400 font-bold">
-                                <div class="absolute right-1 top-1 flex items-center gap-1">
-                                    <button type="button" onclick="generateClusterKey()" class="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 text-[10px] font-mono rounded hover:bg-amber-500/30" title="Generate random key">GEN</button>
-                                    <button type="button" onclick="toggleFieldVis('setting-cluster-secret', this)" class="p-1 text-slate-400 hover:text-amber-300 text-xs" title="Toggle visibility">&#128065;</button>
-                                    <button type="button" onclick="copyFieldValue('setting-cluster-secret')" class="p-1 text-slate-400 hover:text-amber-300 text-xs" title="Copy key">&#128203;</button>
-                                </div>
+                            <div id="cluster-keys-container" class="space-y-2">
+                                <!-- Dynamic fields injected here -->
+                            </div>
+                            <div class="pt-2">
+                                <button type="button" onclick="addClusterKeyField()" class="font-chakra text-[10px] bg-amber-500/20 text-amber-300 px-2 py-1 rounded border border-amber-500/40 hover:bg-amber-500/30">+ ADD COMMON KEY</button>
                             </div>
                         </div>
                     </div>
@@ -694,8 +692,8 @@
                                 <div class="relative">
                                     <input type="text" id="setting-supa-anon" placeholder="sb_publishable_..." class="font-fira text-xs bg-slate-900 border border-slate-700 text-slate-200 pl-3 pr-16 py-2.5 rounded w-full focus:outline-none focus:border-cyan-400">
                                     <div class="absolute right-1 top-1.5 flex items-center gap-1">
-                                        <button type="button" onclick="toggleFieldVis('setting-supa-anon', this)" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Toggle visibility">&#128065;</button>
-                                        <button type="button" onclick="copyFieldValue('setting-supa-anon')" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Copy key">&#128203;</button>
+                                        <button type="button" onclick="toggleFieldVis('setting-supa-anon', this)" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Toggle visibility">[SHOW]</button>
+                                        <button type="button" onclick="copyFieldValue('setting-supa-anon')" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Copy key">[COPY]</button>
                                     </div>
                                 </div>
                                 <p class="font-inter text-[11px] text-slate-500 mt-1">
@@ -714,8 +712,8 @@
                                 <div class="relative">
                                     <input type="text" id="setting-supa-service" placeholder="eyJhbGciOi..." class="font-fira text-xs bg-slate-900 border border-slate-700 text-slate-200 pl-3 pr-16 py-2.5 rounded w-full focus:outline-none focus:border-cyan-400">
                                     <div class="absolute right-1 top-1.5 flex items-center gap-1">
-                                        <button type="button" onclick="toggleFieldVis('setting-supa-service', this)" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Toggle visibility">&#128065;</button>
-                                        <button type="button" onclick="copyFieldValue('setting-supa-service')" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Copy key">&#128203;</button>
+                                        <button type="button" onclick="toggleFieldVis('setting-supa-service', this)" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Toggle visibility">[SHOW]</button>
+                                        <button type="button" onclick="copyFieldValue('setting-supa-service')" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Copy key">[COPY]</button>
                                     </div>
                                 </div>
                                 <p class="font-inter text-[11px] text-slate-500 mt-1">
@@ -968,10 +966,10 @@
             if (!f) return;
             if (f.type === 'password') {
                 f.type = 'text';
-                btn.innerHTML = '&#128274;';
+                btn.innerText = '[HIDE]';
             } else {
                 f.type = 'password';
-                btn.innerHTML = '&#128065;';
+                btn.innerText = '[SHOW]';
             }
         }
 
@@ -985,16 +983,24 @@
             });
         }
 
-        function generateClusterKey() {
-            const arr = new Uint8Array(16);
-            crypto.getRandomValues(arr);
-            const hex = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
-            const newKey = `blast_cluster_${hex}`;
-            const field = document.getElementById('setting-cluster-secret');
-            field.value = newKey;
-            field.type = 'text';
-            showSettingsAlert('info', `Generated new Cluster Mesh Secret Key: ${newKey}. Click 'SAVE & PERSIST' to apply.`);
+        function addClusterKeyField(val = '') {
+            const container = document.getElementById('cluster-keys-container');
+            const id = 'cluster-key-' + Date.now() + Math.floor(Math.random() * 1000);
+            const div = document.createElement('div');
+            div.className = 'relative flex gap-2 items-center';
+            div.innerHTML = `
+                <div class="relative flex-1">
+                    <input type="password" id="${id}" value="${val}" placeholder="https://your-blast-server.onrender.com" class="cluster-secret-input font-fira text-xs bg-slate-900 border border-amber-500/50 text-amber-200 pl-3 pr-24 py-2 rounded w-full focus:outline-none focus:border-amber-400 font-bold">
+                    <div class="absolute right-1 top-1 flex items-center gap-1">
+                        <button type="button" onclick="toggleFieldVis('${id}', this)" class="p-1 text-slate-400 hover:text-amber-300 text-xs" title="Toggle visibility">[SHOW]</button>
+                        <button type="button" onclick="copyFieldValue('${id}')" class="p-1 text-slate-400 hover:text-amber-300 text-xs" title="Copy key">[COPY]</button>
+                    </div>
+                </div>
+                <button type="button" onclick="this.parentElement.remove()" class="text-rose-400 hover:text-rose-300 text-lg">&times;</button>
+            `;
+            container.appendChild(div);
         }
+
 
         function showSettingsAlert(type, msg) {
             const box = document.getElementById('settings-alert-box');
@@ -1006,13 +1012,13 @@
 
             if (type === 'success') {
                 box.classList.add('bg-emerald-950/60', 'border-emerald-500/50', 'text-emerald-300');
-                if (iconEl) iconEl.innerHTML = '&#10003;';
+                if (iconEl) iconEl.innerHTML = '[OK]';
             } else if (type === 'error') {
                 box.classList.add('bg-red-950/60', 'border-red-500/50', 'text-red-300');
-                if (iconEl) iconEl.innerHTML = '&#9888;';
+                if (iconEl) iconEl.innerHTML = '[WARN]';
             } else {
                 box.classList.add('bg-cyan-950/60', 'border-cyan-500/50', 'text-cyan-300');
-                if (iconEl) iconEl.innerHTML = '&#8505;';
+                if (iconEl) iconEl.innerHTML = '[INFO]';
             }
 
             msgEl.innerText = msg;
@@ -1033,7 +1039,14 @@
 
                 document.getElementById('setting-key-1').value = data.blast_api_key_1 || '';
                 document.getElementById('setting-key-2').value = data.blast_api_key_2 || '';
-                document.getElementById('setting-cluster-secret').value = data.blast_cluster_secret || '';
+                
+                const container = document.getElementById('cluster-keys-container');
+                container.innerHTML = '';
+                if (data.blast_cluster_secrets && data.blast_cluster_secrets.length > 0) {
+                    data.blast_cluster_secrets.forEach(k => addClusterKeyField(k));
+                } else {
+                    addClusterKeyField('blast-cluster-mesh-secret-key');
+                }
 
                 document.getElementById('setting-supa-url').value = data.supabase_url || '';
                 document.getElementById('setting-supa-anon').value = data.supabase_anon_key || '';
@@ -1110,7 +1123,7 @@
             const payload = {
                 blast_api_key_1: document.getElementById('setting-key-1').value.trim(),
                 blast_api_key_2: document.getElementById('setting-key-2').value.trim(),
-                blast_cluster_secret: document.getElementById('setting-cluster-secret').value.trim(),
+                blast_cluster_secrets: Array.from(document.querySelectorAll('.cluster-secret-input')).map(el => el.value.trim()).filter(v => v),
                 supabase_url: document.getElementById('setting-supa-url').value.trim(),
                 supabase_anon_key: document.getElementById('setting-supa-anon').value.trim(),
                 supabase_service_role_key: document.getElementById('setting-supa-service').value.trim(),
@@ -1125,8 +1138,8 @@
                 showSettingsAlert('error', 'At least one Blast Client API Key must be provided.');
                 return;
             }
-            if (!payload.blast_cluster_secret) {
-                showSettingsAlert('error', 'Common Cluster Mesh Secret Key cannot be empty.');
+            if (!payload.blast_cluster_secrets || payload.blast_cluster_secrets.length === 0) {
+                showSettingsAlert('error', 'At least one Common Cluster Mesh Secret Key must be provided.');
                 return;
             }
             if (payload.supabase_url && !payload.supabase_url.startsWith('http://') && !payload.supabase_url.startsWith('https://')) {

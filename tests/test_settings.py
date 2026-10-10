@@ -24,7 +24,8 @@ class TestPersistenceManager(unittest.TestCase):
         self.settings_json_path = os.path.join(self.tmp_dir.name, "settings.json")
         self.cfg = BlastConfig(
             API_KEYS=["test-key-1", "test-key-2"],
-            CLUSTER_SECRET="cluster-common-secret-xyz",
+            CLUSTER_SECRETS=["cluster-common-secret-xyz"],
+            CLUSTER_SECRET="",
             SUPABASE_URL="https://initial-project.supabase.co",
             SUPABASE_ANON_KEY="initial-anon-key-123",
             SUPABASE_SERVICE_ROLE_KEY="",
@@ -50,7 +51,7 @@ class TestPersistenceManager(unittest.TestCase):
         settings = self.manager.get_settings()
         self.assertEqual(settings["blast_api_key_1"], "test-key-1")
         self.assertEqual(settings["blast_api_key_2"], "test-key-2")
-        self.assertEqual(settings["blast_cluster_secret"], "cluster-common-secret-xyz")
+        self.assertEqual(settings["blast_cluster_secrets"], ["cluster-common-secret-xyz"])
         self.assertEqual(settings["supabase_url"], "https://initial-project.supabase.co")
         self.assertEqual(settings["supabase_anon_key"], "initial-anon-key-123")
 
@@ -58,7 +59,7 @@ class TestPersistenceManager(unittest.TestCase):
         payload = {
             "blast_api_key_1": "new-client-key-primary",
             "blast_api_key_2": "new-client-key-dev",
-            "blast_cluster_secret": "common-cluster-key-shared-999",
+            "blast_cluster_secrets": ["common-cluster-key-shared-999"],
             "supabase_url": "https://updated-project.supabase.co",
             "supabase_anon_key": "updated-anon-456",
             "supabase_service_role_key": "service-secret-789",
@@ -70,7 +71,7 @@ class TestPersistenceManager(unittest.TestCase):
         # 1. Verify returned settings
         self.assertEqual(res["blast_api_key_1"], "new-client-key-primary")
         self.assertEqual(res["blast_api_key_2"], "new-client-key-dev")
-        self.assertEqual(res["blast_cluster_secret"], "common-cluster-key-shared-999")
+        self.assertEqual(res["blast_cluster_secrets"], ["common-cluster-key-shared-999"])
         self.assertEqual(res["supabase_url"], "https://updated-project.supabase.co")
         self.assertEqual(res["max_workers"], 8)
 
@@ -79,7 +80,7 @@ class TestPersistenceManager(unittest.TestCase):
         with open(self.env_path, "r", encoding="utf-8") as f:
             content = f.read()
         self.assertIn("SUPABASE_URL=https://updated-project.supabase.co", content)
-        self.assertIn("BLAST_CLUSTER_SECRET=common-cluster-key-shared-999", content)
+        self.assertIn("BLAST_CLUSTER_SECRETS=common-cluster-key-shared-999", content)
         self.assertIn("BLAST_API_KEYS=new-client-key-primary,new-client-key-dev", content)
 
         # 3. Verify disk file (settings.json) was written atomically
@@ -88,7 +89,7 @@ class TestPersistenceManager(unittest.TestCase):
             s_data = json.load(jf)
         self.assertEqual(s_data["supabase_url"], "https://updated-project.supabase.co")
         self.assertEqual(s_data["blast_api_key_1"], "new-client-key-primary")
-        self.assertEqual(s_data["blast_cluster_secret"], "common-cluster-key-shared-999")
+        self.assertEqual(s_data["blast_cluster_secrets"], ["common-cluster-key-shared-999"])
         self.assertEqual(s_data["max_workers"], 8)
 
         # 4. Verify hot-sync in Authenticator
@@ -106,11 +107,12 @@ class TestPersistenceManager(unittest.TestCase):
                 "supabase_url": "https://restored-after-crash.supabase.co",
                 "supabase_anon_key": "restored-anon-key",
                 "blast_api_key_1": "restored-client-key",
-                "blast_cluster_secret": "restored-cluster-secret"
+                "blast_cluster_secrets": ["restored-cluster-secret"]
             }, f)
 
         cfg_empty = BlastConfig(
             API_KEYS=[],
+            CLUSTER_SECRETS=[],
             CLUSTER_SECRET="",
             SUPABASE_URL="",
             SUPABASE_ANON_KEY="",
@@ -124,7 +126,7 @@ class TestPersistenceManager(unittest.TestCase):
         self.assertEqual(data["supabase_url"], "https://restored-after-crash.supabase.co")
         self.assertEqual(data["supabase_anon_key"], "restored-anon-key")
         self.assertEqual(data["blast_api_key_1"], "restored-client-key")
-        self.assertEqual(data["blast_cluster_secret"], "restored-cluster-secret")
+        self.assertEqual(data["blast_cluster_secrets"], ["restored-cluster-secret"])
         self.assertTrue(data["has_settings_json"])
 
     def test_save_validation_errors(self):
@@ -153,7 +155,8 @@ class TestSettingsServerEndpoints(unittest.TestCase):
         self.settings_json_path = os.path.join(self.tmp_dir.name, "settings_test.json")
         self.cfg = BlastConfig(
             API_KEYS=["primary-key-100", "dev-key-200"],
-            CLUSTER_SECRET="cluster-mesh-shared-300",
+            CLUSTER_SECRETS=["cluster-mesh-shared-300"],
+            CLUSTER_SECRET="",
             SUPABASE_URL="https://endpoint-test.supabase.co",
             SUPABASE_ANON_KEY="anon-test-key",
             DB_PATH=self.db_path,
@@ -179,14 +182,14 @@ class TestSettingsServerEndpoints(unittest.TestCase):
         data = resp.get_json()
         self.assertEqual(data["blast_api_key_1"], "primary-key-100")
         self.assertEqual(data["blast_api_key_2"], "dev-key-200")
-        self.assertEqual(data["blast_cluster_secret"], "cluster-mesh-shared-300")
+        self.assertEqual(data["blast_cluster_secrets"], ["cluster-mesh-shared-300"])
         self.assertEqual(data["supabase_url"], "https://endpoint-test.supabase.co")
 
     def test_post_save_settings_endpoint(self):
         payload = {
             "blast_api_key_1": "new-master-1",
             "blast_api_key_2": "new-secondary-2",
-            "blast_cluster_secret": "common-cluster-mesh-3",
+            "blast_cluster_secrets": ["common-cluster-mesh-3"],
             "supabase_url": "https://new-live-instance.supabase.co",
             "supabase_anon_key": "new-live-anon",
             "supabase_service_role_key": "new-live-service",
@@ -201,7 +204,7 @@ class TestSettingsServerEndpoints(unittest.TestCase):
         data = resp.get_json()
         self.assertEqual(data["status"], "success")
         self.assertEqual(data["settings"]["blast_api_key_1"], "new-master-1")
-        self.assertEqual(data["settings"]["blast_cluster_secret"], "common-cluster-mesh-3")
+        self.assertEqual(data["settings"]["blast_cluster_secrets"], ["common-cluster-mesh-3"])
         self.assertEqual(data["settings"]["supabase_url"], "https://new-live-instance.supabase.co")
 
         # Verify disk persistence to .env
@@ -209,14 +212,14 @@ class TestSettingsServerEndpoints(unittest.TestCase):
         with open(self.env_path, "r", encoding="utf-8") as f:
             disk_content = f.read()
         self.assertIn("SUPABASE_URL=https://new-live-instance.supabase.co", disk_content)
-        self.assertIn("BLAST_CLUSTER_SECRET=common-cluster-mesh-3", disk_content)
+        self.assertIn("BLAST_CLUSTER_SECRETS=common-cluster-mesh-3", disk_content)
 
         # Verify disk persistence to settings.json
         self.assertTrue(os.path.exists(self.settings_json_path))
         with open(self.settings_json_path, "r", encoding="utf-8") as jf:
             json_disk_content = json.load(jf)
         self.assertEqual(json_disk_content["supabase_url"], "https://new-live-instance.supabase.co")
-        self.assertEqual(json_disk_content["blast_cluster_secret"], "common-cluster-mesh-3")
+        self.assertEqual(json_disk_content["blast_cluster_secrets"], ["common-cluster-mesh-3"])
 
     def test_common_cluster_key_authenticates_peer(self):
         # The 3rd common key allows any other Blast server to authenticate requests
@@ -258,7 +261,7 @@ class TestUniversalSettingsAndPort(unittest.TestCase):
         self.assertIn("supabase_url", creds)
         self.assertIn("supabase_anon_key", creds)
         self.assertIn("blast_api_key_1", creds)
-        self.assertIn("blast_cluster_secret", creds)
+        self.assertIn("blast_cluster_secrets", creds)
 
         # get_setting lookup
         rate_rps = get_setting("rate_limit_rps")

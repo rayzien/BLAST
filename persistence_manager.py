@@ -41,12 +41,16 @@ class PersistenceManager:
         with self._lock:
             # Parse individual API keys
             all_keys = [k.strip() for k in self.cfg.API_KEYS if k.strip()]
-            cluster_sec = getattr(self.cfg, "CLUSTER_SECRET", "")
+            cluster_secs = getattr(self.cfg, "CLUSTER_SECRETS", [])
+            if not cluster_secs:
+                csec = getattr(self.cfg, "CLUSTER_SECRET", "")
+                if csec:
+                    cluster_secs = [csec]
 
             # Filter client keys from cluster secret
-            client_keys = [k for k in all_keys if k != cluster_sec]
+            client_keys = [k for k in all_keys if k not in cluster_secs]
             key1 = client_keys[0] if len(client_keys) > 0 else (all_keys[0] if all_keys else "")
-            key2 = client_keys[1] if len(client_keys) > 1 else (all_keys[1] if len(all_keys) > 1 and all_keys[1] != cluster_sec else "")
+            key2 = client_keys[1] if len(client_keys) > 1 else (all_keys[1] if len(all_keys) > 1 and all_keys[1] not in cluster_secs else "")
 
             sup_url = self.cfg.SUPABASE_URL
             sup_anon = self.cfg.SUPABASE_ANON_KEY
@@ -67,21 +71,24 @@ class PersistenceManager:
                             key1 = s_data["blast_api_key_1"]
                         if not key2 and s_data.get("blast_api_key_2"):
                             key2 = s_data["blast_api_key_2"]
-                        if not cluster_sec and s_data.get("blast_cluster_secret"):
-                            cluster_sec = s_data["blast_cluster_secret"]
+                        if not cluster_secs:
+                            if s_data.get("blast_cluster_secrets"):
+                                cluster_secs = s_data["blast_cluster_secrets"]
+                            elif s_data.get("blast_cluster_secret"):
+                                cluster_secs = [s_data["blast_cluster_secret"]]
                 except Exception:
                     pass
 
             if not key1:
                 key1 = "blast-secret-key-1"
-            if not cluster_sec:
-                cluster_sec = "blast-cluster-mesh-secret-key"
+            if not cluster_secs:
+                cluster_secs = ["blast-cluster-mesh-secret-key"]
 
             return {
                 # Three Key Architecture
                 "blast_api_key_1": key1,
                 "blast_api_key_2": key2,
-                "blast_cluster_secret": cluster_sec,
+                "blast_cluster_secrets": cluster_secs,
 
                 # Supabase Credentials
                 "supabase_url": sup_url,
@@ -120,12 +127,22 @@ class PersistenceManager:
 
             key1 = str(payload.get("blast_api_key_1", "")).strip()
             key2 = str(payload.get("blast_api_key_2", "")).strip()
-            cluster_secret = str(payload.get("blast_cluster_secret", "")).strip() or getattr(self.cfg, "CLUSTER_SECRET", "blast-cluster-mesh-secret-key")
+            
+            cluster_secrets_raw = payload.get("blast_cluster_secrets", [])
+            if not cluster_secrets_raw and payload.get("blast_cluster_secret"):
+                cluster_secrets_raw = [payload["blast_cluster_secret"]]
+            
+            if not cluster_secrets_raw:
+                cluster_secrets_raw = getattr(self.cfg, "CLUSTER_SECRETS", [])
+                if not cluster_secrets_raw:
+                    cluster_secrets_raw = [getattr(self.cfg, "CLUSTER_SECRET", "blast-cluster-mesh-secret-key")]
+
+            cluster_secrets = [str(k).strip() for k in cluster_secrets_raw if str(k).strip()]
 
             if not key1 and not key2:
                 raise ValueError("At least one Blast Client API Key must be specified.")
-            if not cluster_secret:
-                raise ValueError("Common Cluster Mesh Secret Key cannot be empty.")
+            if not cluster_secrets:
+                raise ValueError("At least one Common Cluster Mesh Secret Key must be provided.")
 
             # Compile combined keys list
             combined_keys: List[str] = []
@@ -133,11 +150,13 @@ class PersistenceManager:
                 combined_keys.append(key1)
             if key2 and key2 not in combined_keys:
                 combined_keys.append(key2)
-            if cluster_secret and cluster_secret not in combined_keys:
-                combined_keys.append(cluster_secret)
+            for cs in cluster_secrets:
+                if cs not in combined_keys:
+                    combined_keys.append(cs)
 
             # Client keys string for .env
             client_keys_str = ",".join([k for k in [key1, key2] if k])
+            cluster_secrets_str = ",".join(cluster_secrets)
 
             # Prepare disk updates
             env_updates: Dict[str, str] = {
@@ -145,7 +164,7 @@ class PersistenceManager:
                 "SUPABASE_ANON_KEY": sup_anon,
                 "SUPABASE_SERVICE_ROLE_KEY": sup_service,
                 "BLAST_API_KEYS": client_keys_str,
-                "BLAST_CLUSTER_SECRET": cluster_secret,
+                "BLAST_CLUSTER_SECRETS": cluster_secrets_str,
             }
 
             if "rate_limit_rps" in payload and payload["rate_limit_rps"] != "":
@@ -179,7 +198,7 @@ class PersistenceManager:
                 "supabase_service_role_key": sup_service,
                 "blast_api_key_1": key1,
                 "blast_api_key_2": key2,
-                "blast_cluster_secret": cluster_secret,
+                "blast_cluster_secrets": cluster_secrets,
                 "blast_host": getattr(self.cfg, "HOST", "0.0.0.0"),
                 "blast_port": getattr(self.cfg, "PORT", 8080),
                 "max_workers": getattr(self.cfg, "MAX_WORKERS", 4),
@@ -213,7 +232,7 @@ class PersistenceManager:
             self.cfg.SUPABASE_URL = sup_url
             self.cfg.SUPABASE_ANON_KEY = sup_anon
             self.cfg.SUPABASE_SERVICE_ROLE_KEY = sup_service
-            self.cfg.CLUSTER_SECRET = cluster_secret
+            self.cfg.CLUSTER_SECRETS = cluster_secrets
             self.cfg.API_KEYS = combined_keys
 
             if "rate_limit_rps" in payload and payload["rate_limit_rps"] != "":

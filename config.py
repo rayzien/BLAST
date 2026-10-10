@@ -65,13 +65,23 @@ def get_credentials() -> Dict[str, str]:
             if len(parts) > 1:
                 k2 = parts[1]
 
+    sup_url = (os.getenv("SUPABASE_URL") or s.get("supabase_url") or "").strip().rstrip("/")
+    if sup_url and not (sup_url.startswith("http://") or sup_url.startswith("https://")):
+        sup_url = "https://" + sup_url
+
+    c_secs = os.getenv("BLAST_CLUSTER_SECRETS") or s.get("blast_cluster_secrets")
+    if not c_secs:
+        c_secs = os.getenv("BLAST_CLUSTER_SECRET") or s.get("blast_cluster_secret") or "blast-cluster-mesh-secret-key"
+    if isinstance(c_secs, list):
+        c_secs = ",".join(c_secs)
+
     return {
-        "supabase_url": str(os.getenv("SUPABASE_URL") or s.get("supabase_url") or "").strip().rstrip("/"),
+        "supabase_url": sup_url,
         "supabase_anon_key": str(os.getenv("SUPABASE_ANON_KEY") or s.get("supabase_anon_key") or "").strip(),
         "supabase_service_role_key": str(os.getenv("SUPABASE_SERVICE_ROLE_KEY") or s.get("supabase_service_role_key") or "").strip(),
         "blast_api_key_1": str(k1).strip() or "blast-secret-key-1",
         "blast_api_key_2": str(k2).strip() or "blast-dev-key",
-        "blast_cluster_secret": str(c_sec).strip() or "blast-cluster-mesh-secret-key",
+        "blast_cluster_secrets": str(c_secs).strip(),
     }
 
 
@@ -114,7 +124,12 @@ if _initial_settings:
     _apply_setting_val("SUPABASE_ANON_KEY", _initial_settings.get("supabase_anon_key"))
     if _initial_settings.get("supabase_service_role_key"):
         _apply_setting_val("SUPABASE_SERVICE_ROLE_KEY", _initial_settings.get("supabase_service_role_key"))
-    _apply_setting_val("BLAST_CLUSTER_SECRET", _initial_settings.get("blast_cluster_secret"))
+    
+    if "blast_cluster_secrets" in _initial_settings:
+        c_val = _initial_settings["blast_cluster_secrets"]
+        _apply_setting_val("BLAST_CLUSTER_SECRETS", ",".join(c_val) if isinstance(c_val, list) else str(c_val))
+    else:
+        _apply_setting_val("BLAST_CLUSTER_SECRET", _initial_settings.get("blast_cluster_secret"))
 
     _keys = []
     if _initial_settings.get("blast_api_key_1"):
@@ -222,7 +237,11 @@ class BlastConfig:
             self.PEER_URLS = list(self.SERVER_LINKS)
         elif not self.SERVER_LINKS:
             self.SERVER_LINKS = list(self.PEER_URLS)
-        if self.CLUSTER_SECRET and self.CLUSTER_SECRET not in self.API_KEYS:
+        if self.CLUSTER_SECRETS:
+            for secret in self.CLUSTER_SECRETS:
+                if secret and secret not in self.API_KEYS:
+                    self.API_KEYS.append(secret)
+        elif self.CLUSTER_SECRET and self.CLUSTER_SECRET not in self.API_KEYS:
             self.API_KEYS.append(self.CLUSTER_SECRET)
 
     PEER_URLS: List[str] = field(default_factory=_get_combined_peers)
@@ -242,7 +261,7 @@ class BlastConfig:
 
     # Supabase backend settings (Loaded from environment or settings.json; no hardcoding)
     SUPABASE_URL: str = field(
-        default_factory=lambda: (os.getenv("SUPABASE_URL") or load_settings().get("supabase_url") or "").rstrip("/")
+        default_factory=lambda: ("https://" + u if (u := (os.getenv("SUPABASE_URL") or load_settings().get("supabase_url") or "").strip().rstrip("/")) and not (u.startswith("http://") or u.startswith("https://")) else u)
     )
     SUPABASE_ANON_KEY: str = field(
         default_factory=lambda: str(os.getenv("SUPABASE_ANON_KEY") or load_settings().get("supabase_anon_key") or "")
@@ -256,6 +275,9 @@ class BlastConfig:
     REQUIRE_API_KEY: bool = os.getenv("BLAST_REQUIRE_API_KEY", "true").lower() in ("true", "1", "yes")
     CLUSTER_SECRET: str = field(
         default_factory=lambda: os.getenv("BLAST_CLUSTER_SECRET") or load_settings().get("blast_cluster_secret") or "blast-cluster-mesh-secret-key"
+    )
+    CLUSTER_SECRETS: List[str] = field(
+        default_factory=lambda: [k.strip() for k in str(os.getenv("BLAST_CLUSTER_SECRETS") or (",".join(load_settings().get("blast_cluster_secrets", [])) if isinstance(load_settings().get("blast_cluster_secrets"), list) else load_settings().get("blast_cluster_secrets")) or os.getenv("BLAST_CLUSTER_SECRET") or load_settings().get("blast_cluster_secret") or "blast-cluster-mesh-secret-key").split(",") if k.strip()]
     )
     API_KEYS: List[str] = field(default_factory=_resolve_api_keys)
     MAX_PAYLOAD_BYTES: int = int(os.getenv("BLAST_MAX_PAYLOAD_BYTES", str(10 * 1024 * 1024)))
