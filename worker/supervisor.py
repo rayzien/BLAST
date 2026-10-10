@@ -34,7 +34,7 @@ class WorkerSupervisor:
         logger.worker(f"Worker thread #{worker_id} started.")
         while not self._stop_event.is_set():
             try:
-                jobs = self.storage.fetch_and_lock_pending(limit=5)
+                jobs = self.storage.fetch_and_lock_pending(node_id=self.cfg.NODE_ID, limit=5)
                 if not jobs:
                     time.sleep(self.cfg.WORKER_POLL_INTERVAL)
                     continue

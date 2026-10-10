@@ -36,6 +36,7 @@ class QueueJob:
     response_status: Optional[int] = None
     response_body: Optional[str] = None
     error_message: Optional[str] = None
+    handled_by: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert job to a JSON-serializable dictionary."""
@@ -58,6 +59,7 @@ class QueueJob:
             "response_status": self.response_status,
             "response_body": self.response_body,
             "error_message": self.error_message,
+            "handled_by": self.handled_by,
         }
 
     @classmethod
@@ -82,4 +84,5 @@ class QueueJob:
             response_status=row.get("response_status"),
             response_body=row.get("response_body"),
             error_message=row.get("error_message"),
+            handled_by=row.get("handled_by"),
         )

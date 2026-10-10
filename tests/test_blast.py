@@ -209,11 +209,11 @@ class TestBlastQueueAndStorage(unittest.TestCase):
         self.queue_mgr.enqueue(method="POST", path="/rest/v1/task1", client_id="u1")
         self.queue_mgr.enqueue(method="POST", path="/rest/v1/task2", client_id="u1")
 
-        jobs = self.storage.fetch_and_lock_pending(limit=10)
+        jobs = self.storage.fetch_and_lock_pending("test-node", limit=10)
         self.assertEqual(len(jobs), 2)
         self.assertEqual(jobs[0].status, JobStatus.PROCESSING)
 
-        next_jobs = self.storage.fetch_and_lock_pending(limit=10)
+        next_jobs = self.storage.fetch_and_lock_pending("test-node", limit=10)
         self.assertEqual(len(next_jobs), 0)
 
 

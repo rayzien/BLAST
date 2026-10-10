@@ -1,6 +1,6 @@
 # Render Blueprint Specification for Blast Cluster
 # Architecture: App -> Blast Render Cluster -> Supabase
-# Authors: rayzien and pheonix14
+# Auto-deployment Configuration
 
 services:
   # Primary Blast Gateway Web Service

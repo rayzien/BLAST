@@ -2,7 +2,6 @@
 """Blast Interactive CLI with Guided Y/N Questions and Instant GUI Connection.
 
 Architecture: App -> Blast -> Supabase
-Authors: rayzien and pheonix14
 Guaranteed zero emojis.
 """
 
@@ -115,8 +114,7 @@ def save_env_file(env_vars: dict, filepath: str = ".env"):
     try:
         lines = [
             "# BLAST CONFIGURATION\n",
-            "# Architecture: App -> Blast -> Supabase\n",
-            "# Authors: rayzien and pheonix14\n\n",
+            "# Architecture: App -> Blast -> Supabase\n\n",
         ]
         for k, v in env_vars.items():
             lines.append(f"{k}={v}\n")
@@ -145,7 +143,6 @@ def run_guided_setup():
     print("=" * 72)
     print("  BLAST CLI - GUIDED SETUP & RUNNER")
     print("  Architecture: App -> Blast -> Supabase")
-    print("  Authors: rayzien and pheonix14")
     print("  Zero Emojis Mode: Active")
     print("=" * 72)
 

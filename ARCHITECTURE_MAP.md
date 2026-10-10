@@ -1,8 +1,6 @@
 # BLAST MULTI-SERVER MESH ARCHITECTURE MAP
 ## Dynamic Latency & Load-Aware Routing for Supabase
 
-Authors: rayzien and pheonix14
-
 ```
 ========================================================================================
                           HIGH CONCURRENCY TRAFFIC LIFECYCLE

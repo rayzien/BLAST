@@ -59,9 +59,15 @@ class SQLiteQueueStorage:
                 updated_at REAL NOT NULL,
                 response_status INTEGER,
                 response_body TEXT,
-                error_message TEXT
+                error_message TEXT,
+                handled_by TEXT
             );
         """)
+
+        try:
+            conn.execute("ALTER TABLE jobs ADD COLUMN handled_by TEXT")
+        except sqlite3.OperationalError:
+            pass  # Column exists
 
         conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_jobs_fetch 
@@ -92,8 +98,8 @@ class SQLiteQueueStorage:
                     id, client_id, idempotency_key, method, path, headers,
                     params, body, priority, status, retry_count, max_retries,
                     scheduled_at, created_at, updated_at, response_status,
-                    response_body, error_message
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    response_body, error_message, handled_by
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 job.id,
                 job.client_id,
@@ -113,6 +119,7 @@ class SQLiteQueueStorage:
                 job.response_status,
                 job.response_body,
                 job.error_message,
+                job.handled_by,
             ))
             return True
         except sqlite3.IntegrityError:
@@ -139,7 +146,7 @@ class SQLiteQueueStorage:
             return None
         return QueueJob.from_row(dict(row))
 
-    def fetch_and_lock_pending(self, limit: int = 10) -> List[QueueJob]:
+    def fetch_and_lock_pending(self, node_id: str, limit: int = 10) -> List[QueueJob]:
         """
         Fetch jobs ready to execute (status=pending and scheduled_at <= now).
         Marks them as 'processing' atomically to avoid double-processing.
@@ -162,9 +169,9 @@ class SQLiteQueueStorage:
         placeholders = ",".join("?" for _ in candidate_ids)
         conn.execute(f"""
             UPDATE jobs 
-            SET status = ?, updated_at = ? 
+            SET status = ?, updated_at = ?, handled_by = ?
             WHERE id IN ({placeholders}) AND status = ?
-        """, [JobStatus.PROCESSING.value, now, *candidate_ids, JobStatus.PENDING.value])
+        """, [JobStatus.PROCESSING.value, now, node_id, *candidate_ids, JobStatus.PENDING.value])
 
         # Return locked jobs
         cursor = conn.execute(f"""

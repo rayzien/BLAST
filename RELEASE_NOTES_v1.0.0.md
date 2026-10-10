@@ -2,8 +2,6 @@
 
 A High-Performance Security, Queue, and Smart Mesh Gateway for Supabase.
 
-Authors: rayzien and pheonix14
-
 ---
 
 ## What is Blast?

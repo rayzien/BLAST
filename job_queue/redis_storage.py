@@ -59,7 +59,7 @@ class RedisQueueStorage:
             return None
         return self.get_job(job_id)
 
-    def fetch_and_lock_pending(self, limit: int = 5) -> List[QueueJob]:
+    def fetch_and_lock_pending(self, node_id: str, limit: int = 5) -> List[QueueJob]:
         """Atomically fetch and lock pending jobs ready for execution."""
         now = time.time()
         # Retrieve candidate IDs whose scheduled_at <= now
