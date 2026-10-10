@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLAST GATEWAY | System Dashboard &amp; Control Console</title>
+    
+    <!-- 12 Google and Cyberpunk Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Chakra+Petch:wght@500;600;700&family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Montserrat:wght@500;600;700&family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@600;700&family=Russo+One&family=Share+Tech+Mono&family=Space+Grotesk:wght@500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS for layout utility -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        /* 12 Dedicated Font Styles */
+        .font-audiowide    { font-family: 'Audiowide', cursive; }
+        .font-orbitron     { font-family: 'Orbitron', sans-serif; }
+        .font-rajdhani     { font-family: 'Rajdhani', sans-serif; }
+        .font-syne         { font-family: 'Syne', sans-serif; }
+        .font-russo        { font-family: 'Russo One', sans-serif; }
+        .font-chakra       { font-family: 'Chakra Petch', sans-serif; }
+        .font-space        { font-family: 'Space Grotesk', sans-serif; }
+        .font-montserrat   { font-family: 'Montserrat', sans-serif; }
+        .font-inter        { font-family: 'Inter', sans-serif; }
+        .font-sharetech    { font-family: 'Share Tech Mono', monospace; }
+        .font-jetbrains    { font-family: 'JetBrains Mono', monospace; }
+        .font-fira         { font-family: 'Fira Code', monospace; }
+
+        /* Dark Theme Core Tokens */
+        :root {
+            --bg-dark: #070a10;
+            --bg-panel: #0d121c;
+            --bg-card: #121927;
+            --border-subtle: #1c2638;
+            --cyan-accent: #00ffcc;
+            --amber-accent: #ffaa00;
+            --magenta-accent: #ff0055;
+            --emerald-accent: #10b981;
+        }
+
+        /* Native Clean Cursor (Custom Cursor Removed) */
+        html, body {
+            background-color: var(--bg-dark);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            cursor: auto;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* Subtle Cyber Grid */
+        .cyber-grid {
+            background-image: 
+                linear-gradient(to right, rgba(0, 255, 204, 0.025) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 255, 204, 0.025) 1px, transparent 1px);
+            background-size: 28px 28px;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 7px; height: 7px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--cyan-accent); }
+
+        /* Navigation Tab Selected Indicator */
+        .nav-tab.active {
+            color: var(--cyan-accent);
+            border-bottom: 2px solid var(--cyan-accent);
+            background: rgba(0, 255, 204, 0.06);
+        }
+    </style>
+</head>
+<body class="cyber-grid min-h-screen flex flex-col">
+
+    <!-- Top Command & Connection Header -->
+    <header class="border-b border-slate-800 bg-[#090d15]/95 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- Branding -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 border border-cyan-400 bg-cyan-950/40 flex items-center justify-center font-audiowide text-cyan-400 text-xl font-bold shadow-lg shadow-cyan-500/10">
+                    B
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-audiowide text-2xl tracking-wider text-white">BLAST</span>
+                        <span class="font-fira text-xs px-2 py-0.5 bg-cyan-950/80 text-cyan-300 border border-cyan-500/30 rounded">GATEWAY v1.0</span>
+                    </div>
+                    <span class="font-rajdhani text-xs text-slate-400 font-semibold tracking-wider uppercase block">
+                        ZERO-TRUST SECURITY &amp; BUFFER QUEUE FOR SUPABASE
+                    </span>
+                </div>
+            </div>
+
+            <!-- CLI Auto-Connection Controls -->
+            <div class="flex flex-wrap items-center gap-2 bg-slate-900/90 border border-slate-800 p-1.5 rounded-lg">
+                <div class="flex items-center gap-2 px-2.5">
+                    <span id="conn-dot" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+                    <span id="conn-status" class="font-sharetech text-xs text-slate-400">CONNECTING...</span>
+                </div>
+                <input type="text" id="cfg-host" value="" placeholder="http://localhost:8080" class="font-fira text-xs bg-slate-950 border border-slate-700 text-cyan-300 px-2.5 py-1.5 rounded w-48 focus:outline-none focus:border-cyan-400">
+                <input type="password" id="cfg-key" value="blast-secret-key-1" placeholder="API Key" class="font-fira text-xs bg-slate-950 border border-slate-700 text-slate-200 px-2.5 py-1.5 rounded w-36 focus:outline-none focus:border-cyan-400">
+                <button onclick="reconnectGateway()" class="font-chakra text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 px-3 py-1.5 rounded transition font-semibold">
+                    SYNC CLI
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto border-t border-slate-800/80">
+            <button onclick="showTab('dashboard')" id="tab-dashboard" class="nav-tab active font-montserrat text-xs tracking-wider py-2.5 px-4 font-semibold uppercase text-slate-400 hover:text-white transition">
+                [01. TELEMETRY DASHBOARD]
+            </button>
+            <button onclick="showTab('console')" id="tab-console" class="nav-tab font-montserrat text-xs tracking-wider py-2.5 px-4 font-semibold uppercase text-slate-400 hover:text-white transition">
+                [02. REQUEST DISPATCHER]
+            </button>
+            <button onclick="showTab('security')" id="tab-security" class="nav-tab font-montserrat text-xs tracking-wider py-2.5 px-4 font-semibold uppercase text-slate-400 hover:text-white transition">
+                [03. SECURITY LAB]
+            </button>
+            <button onclick="showTab('dlq')" id="tab-dlq" class="nav-tab font-montserrat text-xs tracking-wider py-2.5 px-4 font-semibold uppercase text-slate-400 hover:text-white transition">
+                [04. DEAD LETTER QUEUE]
+            </button>
+            <button onclick="showTab('cluster')" id="tab-cluster" class="nav-tab font-montserrat text-xs tracking-wider py-2.5 px-4 font-semibold uppercase text-slate-400 hover:text-white transition">
+                [05. CLUSTER NODES]
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+
+        <!-- ============================================================= -->
+        <!-- VIEW 1: TELEMETRY DASHBOARD -->
+        <!-- ============================================================= -->
+        <div id="view-dashboard" class="space-y-6">
+            
+            <!-- Realtime Metrics Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                <!-- Pending Queue -->
+                <div class="bg-[#0d121c] border border-amber-500/30 rounded-xl p-4">
+                    <div class="flex justify-between items-start">
+                        <span class="font-space text-xs font-semibold text-slate-400 uppercase tracking-wider">PENDING QUEUE</span>
+                        <span class="font-sharetech text-[11px] text-amber-400 bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-500/30">[BUFFERED]</span>
+                    </div>
+                    <div class="font-russo text-4xl text-amber-400 mt-2" id="val-pending">0</div>
+                    <p class="font-inter text-xs text-slate-500 mt-1">Absorbing traffic spikes before Supabase</p>
+                </div>
+
+                <!-- Active Processing -->
+                <div class="bg-[#0d121c] border border-cyan-500/30 rounded-xl p-4">
+                    <div class="flex justify-between items-start">
+                        <span class="font-space text-xs font-semibold text-slate-400 uppercase tracking-wider">PROCESSING</span>
+                        <span class="font-sharetech text-[11px] text-cyan-400 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-500/30">[IN FLIGHT]</span>
+                    </div>
+                    <div class="font-russo text-4xl text-cyan-300 mt-2" id="val-processing">0</div>
+                    <p class="font-inter text-xs text-slate-500 mt-1">Concurrently executing worker threads</p>
+                </div>
+
+                <!-- Successfully Resolved -->
+                <div class="bg-[#0d121c] border border-emerald-500/30 rounded-xl p-4">
+                    <div class="flex justify-between items-start">
+                        <span class="font-space text-xs font-semibold text-slate-400 uppercase tracking-wider">RESOLVED</span>
+                        <span class="font-sharetech text-[11px] text-emerald-400 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-500/30">[COMPLETED]</span>
+                    </div>
+                    <div class="font-russo text-4xl text-emerald-400 mt-2" id="val-completed">0</div>
+                    <p class="font-inter text-xs text-slate-500 mt-1">Written to Supabase and verified safe</p>
+                </div>
+
+                <!-- Dead Letter Queue (DLQ) -->
+                <div class="bg-[#0d121c] border border-rose-500/30 rounded-xl p-4">
+                    <div class="flex justify-between items-start">
+                        <span class="font-space text-xs font-semibold text-slate-400 uppercase tracking-wider">DEAD LETTER</span>
+                        <span class="font-sharetech text-[11px] text-rose-400 bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-500/30">[DLQ]</span>
+                    </div>
+                    <div class="font-russo text-4xl text-rose-400 mt-2" id="val-dlq">0</div>
+                    <p class="font-inter text-xs text-slate-500 mt-1">Retries exhausted or fatal exceptions</p>
+                </div>
+            </div>
+
+            <!-- Gateway Health & Info Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Telemetry Readout -->
+                <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5 space-y-3">
+                    <h3 class="font-orbitron text-sm font-bold text-slate-200 tracking-wider uppercase border-b border-slate-800 pb-2">
+                        [GATEWAY NODE TELEMETRY]
+                    </h3>
+                    <div class="space-y-2.5 font-jetbrains text-xs">
+                        <div class="flex justify-between py-1 border-b border-slate-900">
+                            <span class="text-slate-400">Node Identifier:</span>
+                            <span class="text-cyan-300 font-semibold" id="node-id-val">--</span>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-slate-900">
+                            <span class="text-slate-400">Queue Storage Engine:</span>
+                            <span class="text-slate-200" id="storage-engine-val">SQLite WAL-Mode</span>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-slate-900">
+                            <span class="text-slate-400">Worker Supervisors:</span>
+                            <span class="text-emerald-400" id="workers-val">ONLINE</span>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-slate-900">
+                            <span class="text-slate-400">Security Checker:</span>
+                            <span class="text-cyan-300">ACTIVE &amp; ENFORCING</span>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-slate-900">
+                            <span class="text-slate-400">Target Supabase:</span>
+                            <span class="text-emerald-400" id="supa-state-val">CONFIGURED</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Architectural Flow Visualization -->
+                <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5 lg:col-span-2 space-y-4">
+                    <h3 class="font-orbitron text-sm font-bold text-slate-200 tracking-wider uppercase border-b border-slate-800 pb-2">
+                        [ZERO-TRUST TRAFFIC PIPELINE]
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center my-3">
+                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg">
+                            <span class="font-rajdhani text-sm font-bold text-cyan-400 uppercase tracking-wider block">01. CLIENT APP</span>
+                            <p class="font-inter text-xs text-slate-400 mt-1">Dispatches writes with API Key and Idempotency token</p>
+                        </div>
+                        <div class="bg-cyan-950/20 border border-cyan-500/40 p-4 rounded-lg">
+                            <span class="font-rajdhani text-sm font-bold text-white uppercase tracking-wider block">02. BLAST GATEWAY</span>
+                            <p class="font-inter text-xs text-slate-300 mt-1">Verifies security, buffers in durable queue, dispatches with backoff</p>
+                        </div>
+                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg">
+                            <span class="font-rajdhani text-sm font-bold text-emerald-400 uppercase tracking-wider block">03. SUPABASE</span>
+                            <p class="font-inter text-xs text-slate-400 mt-1">Protected from connection saturation and rate limits</p>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-slate-950 border border-slate-800/80 rounded font-sharetech text-xs text-slate-400">
+                        [ACTIVE PROTOCOL] Inbound requests to <code class="text-cyan-300">/v1/queue/*</code> are acknowledged with 202 Accepted. Requests to <code class="text-amber-300">/v1/proxy/*</code> execute synchronously through the security checker.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- VIEW 2: REQUEST DISPATCH CONSOLE -->
+        <!-- ============================================================= -->
+        <div id="view-console" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Request Configurator -->
+                <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5 space-y-4">
+                    <h3 class="font-orbitron text-sm font-bold text-slate-200 tracking-wider uppercase border-b border-slate-800 pb-2">
+                        [REQUEST BUILDER]
+                    </h3>
+
+                    <!-- Route Mode Selection -->
+                    <div>
+                        <label class="font-space text-xs font-semibold text-slate-400 block mb-1.5 uppercase">Routing Strategy</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="setMode('queue')" id="mode-queue-btn" class="py-2 px-3 border border-cyan-400 bg-cyan-950/40 text-cyan-300 font-chakra text-xs font-bold rounded text-center transition">
+                                ASYNC QUEUE (/v1/queue/*)
+                            </button>
+                            <button type="button" onclick="setMode('proxy')" id="mode-proxy-btn" class="py-2 px-3 border border-slate-700 bg-slate-900 text-slate-400 font-chakra text-xs font-bold rounded text-center transition">
+                                SYNC PROXY (/v1/proxy/*)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Method & Target Path -->
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="font-space text-xs font-semibold text-slate-400 block mb-1.5 uppercase">HTTP Verb</label>
+                            <select id="req-method" class="w-full font-fira text-xs bg-slate-950 border border-slate-700 text-white p-2.5 rounded focus:outline-none focus:border-cyan-400">
+                                <option value="POST">POST</option>
+                                <option value="GET">GET</option>
+                                <option value="PATCH">PATCH</option>
+                                <option value="PUT">PUT</option>
+                                <option value="DELETE">DELETE</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="font-space text-xs font-semibold text-slate-400 block mb-1.5 uppercase">Supabase Endpoint</label>
+                            <input type="text" id="req-path" value="/rest/v1/orders" class="w-full font-fira text-xs bg-slate-950 border border-slate-700 text-cyan-300 p-2.5 rounded focus:outline-none focus:border-cyan-400">
+                        </div>
+                    </div>
+
+                    <!-- Idempotency & Priority -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="font-space text-xs font-semibold text-slate-400 block mb-1.5 uppercase">Idempotency Key</label>
+                            <input type="text" id="req-idemp" value="" placeholder="auto-generated UUID" class="w-full font-fira text-xs bg-slate-950 border border-slate-700 text-slate-200 p-2.5 rounded focus:outline-none focus:border-cyan-400">
+                        </div>
+                        <div>
+                            <label class="font-space text-xs font-semibold text-slate-400 block mb-1.5 uppercase">Queue Priority</label>
+                            <select id="req-priority" class="w-full font-fira text-xs bg-slate-950 border border-slate-700 text-white p-2.5 rounded focus:outline-none focus:border-cyan-400">
+                                <option value="0">Normal (0)</option>
+                                <option value="1">High (1)</option>
+                                <option value="2">Urgent (2)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Payload -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <label class="font-space text-xs font-semibold text-slate-400 uppercase">JSON Body</label>
+                            <button type="button" onclick="formatBodyJson()" class="font-fira text-[11px] text-cyan-400 hover:underline">Format JSON</button>
+                        </div>
+                        <textarea id="req-body" rows="6" class="w-full font-jetbrains text-xs bg-slate-950 border border-slate-700 text-slate-200 p-3 rounded focus:outline-none focus:border-cyan-400">{"customer": "Atlas Tech", "amount": 420.00, "status": "pending"}</textarea>
+                    </div>
+
+                    <!-- Dispatch Action -->
+                    <button type="button" onclick="executeConsoleDispatch()" class="w-full py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-chakra text-sm font-bold tracking-wider uppercase rounded shadow-lg transition">
+                        TRANSMIT REQUEST THROUGH BLAST
+                    </button>
+                </div>
+
+                <!-- Live Response Telemetry Panel -->
+                <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5 flex flex-col">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-3">
+                        <h3 class="font-orbitron text-sm font-bold text-slate-200 tracking-wider uppercase">
+                            [EXECUTION FEEDBACK]
+                        </h3>
+                        <span id="badge-status" class="font-fira text-xs px-2.5 py-1 bg-slate-800 text-slate-400 rounded">STANDBY</span>
+                    </div>
+
+                    <div class="space-y-3 flex-1 flex flex-col">
+                        <div class="grid grid-cols-2 gap-2 font-sharetech text-xs bg-slate-950 p-2.5 rounded border border-slate-800">
+                            <div><span class="text-slate-500">Latency:</span> <span id="telemetry-latency" class="text-cyan-300">-- ms</span></div>
+                            <div><span class="text-slate-500">Assigned Job ID:</span> <span id="telemetry-job-id" class="text-amber-300">--</span></div>
+                        </div>
+
+                        <div class="flex-1 flex flex-col">
+                            <label class="font-space text-xs font-semibold text-slate-400 block mb-1 uppercase">Response Body</label>
+                            <pre id="telemetry-output" class="font-jetbrains text-xs bg-slate-950 p-3 rounded border border-slate-800 text-slate-300 overflow-auto flex-1 min-h-[280px] whitespace-pre-wrap">// Output will be rendered here upon dispatch...</pre>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- VIEW 3: SECURITY CHECKER LAB -->
+        <!-- ============================================================= -->
+        <div id="view-security" class="hidden space-y-6">
+            <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5">
+                <div class="border-b border-slate-800 pb-3 mb-4">
+                    <h3 class="font-syne text-lg font-bold text-white tracking-wide uppercase">
+                        ZERO-TRUST SECURITY CHECKER LAB
+                    </h3>
+                    <p class="font-inter text-xs text-slate-400 mt-1">
+                        Live attack simulation lab testing Blast's multi-phase request verification and database error leak sanitizer.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    
+                    <!-- Attack 1 -->
+                    <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg flex flex-col justify-between">
+                        <div>
+                            <span class="font-chakra text-xs text-rose-400 font-bold uppercase">[TEST 01] SQL INJECTION</span>
+                            <p class="font-inter text-xs text-slate-400 mt-2">Injects SQL meta-characters and statements into PostgREST query filters.</p>
+                            <code class="font-fira text-[11px] text-slate-500 block mt-2 bg-slate-900 p-1.5 rounded break-all">?id=1; DROP TABLE users --</code>
+                        </div>
+                        <button onclick="executeSecuritySimulation('sqli')" class="mt-4 font-chakra text-xs py-2 px-3 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded transition font-semibold">
+                            TEST SQL INJECTION
+                        </button>
+                    </div>
+
+                    <!-- Attack 2 -->
+                    <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg flex flex-col justify-between">
+                        <div>
+                            <span class="font-chakra text-xs text-rose-400 font-bold uppercase">[TEST 02] SCRIPT (XSS)</span>
+                            <p class="font-inter text-xs text-slate-400 mt-2">Injects executable JavaScript tags into JSON payload strings.</p>
+                            <code class="font-fira text-[11px] text-slate-500 block mt-2 bg-slate-900 p-1.5 rounded break-all">{"data": "&lt;script&gt;..."}</code>
+                        </div>
+                        <button onclick="executeSecuritySimulation('xss')" class="mt-4 font-chakra text-xs py-2 px-3 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded transition font-semibold">
+                            TEST XSS SCRIPT
+                        </button>
+                    </div>
+
+                    <!-- Attack 3 -->
+                    <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg flex flex-col justify-between">
+                        <div>
+                            <span class="font-chakra text-xs text-rose-400 font-bold uppercase">[TEST 03] PATH TRAVERSAL</span>
+                            <p class="font-inter text-xs text-slate-400 mt-2">Attempts directory traversal or rogue unauthorized route execution.</p>
+                            <code class="font-fira text-[11px] text-slate-500 block mt-2 bg-slate-900 p-1.5 rounded break-all">/v1/proxy/../../etc/passwd</code>
+                        </div>
+                        <button onclick="executeSecuritySimulation('traversal')" class="mt-4 font-chakra text-xs py-2 px-3 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded transition font-semibold">
+                            TEST PATH TRAVERSAL
+                        </button>
+                    </div>
+
+                    <!-- Attack 4 -->
+                    <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg flex flex-col justify-between">
+                        <div>
+                            <span class="font-chakra text-xs text-cyan-400 font-bold uppercase">[TEST 04] SAFE VERIFIED WRITE</span>
+                            <p class="font-inter text-xs text-slate-400 mt-2">Valid compliant request that passes all zero-trust security checks.</p>
+                            <code class="font-fira text-[11px] text-slate-500 block mt-2 bg-slate-900 p-1.5 rounded break-all">POST /rest/v1/orders</code>
+                        </div>
+                        <button onclick="executeSecuritySimulation('valid')" class="mt-4 font-chakra text-xs py-2 px-3 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded transition font-semibold">
+                            TEST SAFE WRITE
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- Live Diagnostic Terminal -->
+                <div class="mt-6">
+                    <label class="font-space text-xs font-semibold text-slate-400 block mb-1 uppercase">Security Checker Realtime Inspector</label>
+                    <pre id="security-log-terminal" class="font-sharetech text-xs bg-slate-950 p-4 rounded border border-slate-800 text-slate-300 h-64 overflow-auto whitespace-pre-wrap">[SECURITY CHECKER] System ready. Zero-trust enforcement active.</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- VIEW 4: DEAD LETTER QUEUE (DLQ) -->
+        <!-- ============================================================= -->
+        <div id="view-dlq" class="hidden space-y-6">
+            <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+                    <div>
+                        <h3 class="font-orbitron text-sm font-bold text-slate-200 tracking-wider uppercase">
+                            [DEAD LETTER QUEUE (DLQ) REPOSITORY]
+                        </h3>
+                        <p class="font-inter text-xs text-slate-400 mt-1">
+                            Poison payloads or exhausted jobs stored with full diagnostics. Re-queue immediately.
+                        </p>
+                    </div>
+                    <button onclick="reloadDlqList()" class="font-chakra text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded transition font-semibold">
+                        RELOAD DLQ
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left font-jetbrains text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-slate-400 uppercase font-space text-[11px]">
+                                <th class="py-2.5 px-3">Job ID</th>
+                                <th class="py-2.5 px-3">Error Reason</th>
+                                <th class="py-2.5 px-3">Timestamp</th>
+                                <th class="py-2.5 px-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dlq-table-entries" class="divide-y divide-slate-800/60">
+                            <tr>
+                                <td colspan="4" class="py-6 text-center text-slate-500 font-inter">
+                                    No dead letter jobs found. All queues healthy.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- VIEW 5: CLUSTER TOPOLOGY -->
+        <!-- ============================================================= -->
+        <div id="view-cluster" class="hidden space-y-6">
+            <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5">
+                <div class="border-b border-slate-800 pb-3 mb-4">
+                    <h3 class="font-orbitron text-sm font-bold text-slate-200 tracking-wider uppercase">
+                        [RENDER MULTI-INSTANCE CLUSTER TOPOLOGY]
+                    </h3>
+                    <p class="font-inter text-xs text-slate-400 mt-1">
+                        Active Blast nodes interconnected with shared Redis queue storage and heartbeat peer discovery.
+                    </p>
+                </div>
+
+                <div id="cluster-nodes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Loaded dynamically via JavaScript -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-900 bg-[#06090e] py-4 text-center font-sharetech text-xs text-slate-500">
+        BLAST GATEWAY &copy; 2026 | BUILT BY RAYZIEN AND PHEONIX14 | ZERO EMOJIS ARCHITECTURE
+    </footer>
+
+    <!-- Interactive Dashboard Script -->
+    <script>
+        let currentDispatchMode = 'queue';
+
+        // Auto-detect host from browser address bar
+        function detectGatewayHost() {
+            if (window.location.protocol.startsWith('http')) {
+                return window.location.origin;
+            }
+            return 'http://localhost:8080';
+        }
+
+        // Initialize connection parameters from localStorage or auto-detection
+        function initConnectionParams() {
+            const savedHost = localStorage.getItem('blast_host');
+            const savedKey = localStorage.getItem('blast_key');
+            document.getElementById('cfg-host').value = savedHost || detectGatewayHost();
+            if (savedKey) document.getElementById('cfg-key').value = savedKey;
+        }
+
+        function getActiveHost() {
+            return document.getElementById('cfg-host').value.trim().replace(/\/+$/, '');
+        }
+
+        function getActiveKey() {
+            return document.getElementById('cfg-key').value.trim();
+        }
+
+        function saveConnectionParams() {
+            localStorage.setItem('blast_host', getActiveHost());
+            localStorage.setItem('blast_key', getActiveKey());
+        }
+
+        function showTab(tabName) {
+            const tabs = ['dashboard', 'console', 'security', 'dlq', 'cluster'];
+            tabs.forEach(t => {
+                const view = document.getElementById('view-' + t);
+                const btn = document.getElementById('tab-' + t);
+                if (view) view.classList.add('hidden');
+                if (btn) btn.classList.remove('active');
+            });
+
+            const activeView = document.getElementById('view-' + tabName);
+            const activeBtn = document.getElementById('tab-' + tabName);
+            if (activeView) activeView.classList.remove('hidden');
+            if (activeBtn) activeBtn.classList.add('active');
+
+            if (tabName === 'dlq') reloadDlqList();
+            if (tabName === 'cluster') reloadClusterGrid();
+        }
+
+        function setMode(mode) {
+            currentDispatchMode = mode;
+            const btnQueue = document.getElementById('mode-queue-btn');
+            const btnProxy = document.getElementById('mode-proxy-btn');
+            if (mode === 'queue') {
+                btnQueue.className = "py-2 px-3 border border-cyan-400 bg-cyan-950/40 text-cyan-300 font-chakra text-xs font-bold rounded text-center transition";
+                btnProxy.className = "py-2 px-3 border border-slate-700 bg-slate-900 text-slate-400 font-chakra text-xs font-bold rounded text-center transition";
+            } else {
+                btnProxy.className = "py-2 px-3 border border-amber-400 bg-amber-950/40 text-amber-300 font-chakra text-xs font-bold rounded text-center transition";
+                btnQueue.className = "py-2 px-3 border border-slate-700 bg-slate-900 text-slate-400 font-chakra text-xs font-bold rounded text-center transition";
+            }
+        }
+
+        function formatBodyJson() {
+            const ta = document.getElementById('req-body');
+            try {
+                const parsed = JSON.parse(ta.value);
+                ta.value = JSON.stringify(parsed, null, 2);
+            } catch (e) {
+                alert('Invalid JSON syntax: ' + e.message);
+            }
+        }
+
+        async function reconnectGateway() {
+            saveConnectionParams();
+            const host = getActiveHost();
+            const dot = document.getElementById('conn-dot');
+            const label = document.getElementById('conn-status');
+
+            try {
+                const res = await fetch(`${host}/health`, { method: 'GET' });
+                if (res.ok) {
+                    const data = await res.json();
+                    dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
+                    label.innerText = "ONLINE";
+                    label.className = "font-sharetech text-xs text-emerald-400 font-bold";
+                    
+                    document.getElementById('node-id-val').innerText = data.node_id || 'node-local';
+                    document.getElementById('supa-state-val').innerText = data.supabase_configured ? "CONFIGURED" : "NOT SET";
+                    
+                    fetchQueueMetrics();
+                } else {
+                    throw new Error('HTTP ' + res.status);
+                }
+            } catch (err) {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+                label.innerText = "OFFLINE";
+                label.className = "font-sharetech text-xs text-rose-400 font-bold";
+            }
+        }
+
+        async function fetchQueueMetrics() {
+            const host = getActiveHost();
+            const key = getActiveKey();
+            try {
+                const res = await fetch(`${host}/v1/queue/stats`, {
+                    headers: { 'X-Blast-Key': key }
+                });
+                if (res.ok) {
+                    const stats = await res.json();
+                    document.getElementById('val-pending').innerText = stats.pending ?? 0;
+                    document.getElementById('val-processing').innerText = stats.processing ?? 0;
+                    document.getElementById('val-completed').innerText = stats.completed ?? 0;
+                    document.getElementById('val-dlq').innerText = stats.dead_letter ?? 0;
+                    document.getElementById('storage-engine-val').innerText = stats.storage_type === 'redis_distributed' ? 'Distributed Redis' : 'SQLite WAL-Mode';
+                }
+            } catch (e) {}
+        }
+
+        async function executeConsoleDispatch() {
+            const host = getActiveHost();
+            const key = getActiveKey();
+            const method = document.getElementById('req-method').value;
+            const targetPath = document.getElementById('req-path').value.trim();
+            const idemp = document.getElementById('req-idemp').value.trim() || 'req-' + Math.random().toString(36).substring(2, 10);
+            const priority = document.getElementById('req-priority').value;
+            const bodyStr = document.getElementById('req-body').value.trim();
+
+            const url = currentDispatchMode === 'queue' ? `${host}/v1/queue${targetPath}` : `${host}/v1/proxy${targetPath}`;
+            
+            const headers = {
+                'X-Blast-Key': key,
+                'Content-Type': 'application/json',
+                'X-Idempotency-Key': idemp,
+                'X-Priority': priority
+            };
+
+            const outEl = document.getElementById('telemetry-output');
+            const badgeEl = document.getElementById('badge-status');
+            const latEl = document.getElementById('telemetry-latency');
+            const jobIdEl = document.getElementById('telemetry-job-id');
+
+            outEl.innerText = "// Dispatched to Blast Gateway. Awaiting upstream response...";
+            const start = performance.now();
+
+            try {
+                const opts = { method: method, headers: headers };
+                if (method !== 'GET' && method !== 'HEAD' && bodyStr) {
+                    opts.body = bodyStr;
+                }
+
+                const res = await fetch(url, opts);
+                const elapsed = Math.round(performance.now() - start);
+                latEl.innerText = `${elapsed} ms`;
+                badgeEl.innerText = `HTTP ${res.status}`;
+                badgeEl.className = res.ok ? "font-fira text-xs px-2.5 py-1 bg-emerald-950 text-emerald-300 border border-emerald-500/40 rounded font-semibold" : "font-fira text-xs px-2.5 py-1 bg-rose-950 text-rose-300 border border-rose-500/40 rounded font-semibold";
+
+                const text = await res.text();
+                try {
+                    const parsed = JSON.parse(text);
+                    outEl.innerText = JSON.stringify(parsed, null, 2);
+                    if (parsed.job_id) {
+                        jobIdEl.innerText = parsed.job_id;
+                    }
+                } catch {
+                    outEl.innerText = text;
+                }
+                fetchQueueMetrics();
+            } catch (err) {
+                badgeEl.innerText = "NETWORK ERROR";
+                badgeEl.className = "font-fira text-xs px-2.5 py-1 bg-rose-950 text-rose-300 rounded font-semibold";
+                outEl.innerText = `[ERROR] Failed to communicate with Blast: ${err.message}`;
+            }
+        }
+
+        async function executeSecuritySimulation(type) {
+            const host = getActiveHost();
+            const key = getActiveKey();
+            const term = document.getElementById('security-log-terminal');
+
+            let url = '';
+            let opts = { headers: { 'X-Blast-Key': key } };
+
+            if (type === 'sqli') {
+                url = `${host}/v1/proxy/rest/v1/users?id=1;%20DROP%20TABLE%20users%20--`;
+                opts.method = 'GET';
+                term.innerText += `\n\n[ATTACK SIMULATION] SQL Injection attempt:\nGET ${url}`;
+            } else if (type === 'xss') {
+                url = `${host}/v1/queue/rest/v1/comments`;
+                opts.method = 'POST';
+                opts.headers['Content-Type'] = 'application/json';
+                opts.body = JSON.stringify({ comment: "<script>alert('pwned')</script>" });
+                term.innerText += `\n\n[ATTACK SIMULATION] XSS Script Tag attempt:\nPOST ${url}\nBody: ${opts.body}`;
+            } else if (type === 'traversal') {
+                url = `${host}/v1/proxy/../../etc/passwd`;
+                opts.method = 'GET';
+                term.innerText += `\n\n[ATTACK SIMULATION] Path Traversal attempt:\nGET ${url}`;
+            } else if (type === 'valid') {
+                url = `${host}/v1/queue/rest/v1/orders`;
+                opts.method = 'POST';
+                opts.headers['Content-Type'] = 'application/json';
+                opts.body = JSON.stringify({ customer: "Atlas Verified", amount: 150.00 });
+                term.innerText += `\n\n[SAFE VERIFICATION] Compliant request:\nPOST ${url}`;
+            }
+
+            try {
+                const res = await fetch(url, opts);
+                const txt = await res.text();
+                term.innerText += `\n[INTERCEPTION REPORT] HTTP ${res.status}\nResponse: ${txt}`;
+                term.scrollTop = term.scrollHeight;
+            } catch (e) {
+                term.innerText += `\n[ERROR] ${e.message}`;
+            }
+        }
+
+        async function reloadDlqList() {
+            const host = getActiveHost();
+            const key = getActiveKey();
+            const tbody = document.getElementById('dlq-table-entries');
+            try {
+                const res = await fetch(`${host}/v1/dlq`, {
+                    headers: { 'X-Blast-Key': key }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (!data.items || data.items.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-slate-500 font-inter">No dead letter jobs found. All queues healthy.</td></tr>`;
+                        return;
+                    }
+                    tbody.innerHTML = data.items.map(item => `
+                        <tr class="hover:bg-slate-900/50">
+                            <td class="py-2.5 px-3 text-cyan-300">${item.job_id}</td>
+                            <td class="py-2.5 px-3 text-rose-300">${item.reason}</td>
+                            <td class="py-2.5 px-3 text-slate-400">${new Date(item.moved_at * 1000).toLocaleTimeString()}</td>
+                            <td class="py-2.5 px-3 text-right">
+                                <button onclick="requeueDlqJob('${item.job_id}')" class="px-2.5 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded text-[11px] font-chakra font-semibold">
+                                    RETRY
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {}
+        }
+
+        async function requeueDlqJob(jobId) {
+            const host = getActiveHost();
+            const key = getActiveKey();
+            try {
+                const res = await fetch(`${host}/v1/dlq/${jobId}/retry`, {
+                    method: 'POST',
+                    headers: { 'X-Blast-Key': key }
+                });
+                if (res.ok) {
+                    alert(`Job ${jobId} re-queued successfully.`);
+                    reloadDlqList();
+                    fetchQueueMetrics();
+                }
+            } catch (e) {
+                alert('Re-queue failed: ' + e.message);
+            }
+        }
+
+        async function reloadClusterGrid() {
+            const host = getActiveHost();
+            const grid = document.getElementById('cluster-nodes-grid');
+            try {
+                const res = await fetch(`${host}/v1/cluster/nodes`);
+                if (res.ok) {
+                    const data = await res.json();
+                    grid.innerHTML = data.nodes.map(n => `
+                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg font-jetbrains text-xs">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-bold text-cyan-300 font-chakra">${n.node_id}</span>
+                                <span class="px-2 py-0.5 rounded text-[10px] ${n.role === 'local_node' ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/40' : 'bg-slate-800 text-slate-300'}">${n.role}</span>
+                            </div>
+                            <div class="text-slate-400 text-[11px]">${n.url}</div>
+                            <div class="text-slate-500 text-[10px] mt-2">Last Heartbeat: ${n.seconds_ago}s ago</div>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {}
+        }
+
+        // Initialize and start background heartbeat
+        initConnectionParams();
+        reconnectGateway();
+        setInterval(reconnectGateway, 4000);
+    </script>
+</body>
+</html>

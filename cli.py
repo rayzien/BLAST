@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Blast Interactive CLI with Guided Y/N Questions.
+"""Blast Interactive CLI with Guided Y/N Questions and Instant GUI Connection.
 
 Architecture: App -> Blast -> Supabase
 Authors: rayzien and pheonix14
@@ -10,6 +10,10 @@ import os
 import sys
 import secrets
 import argparse
+import socket
+import threading
+import time
+import webbrowser
 from typing import Optional
 from config import config, BlastConfig
 from logger import logger
@@ -64,6 +68,23 @@ def prompt_text(question: str, default: str = "", is_secret: bool = False, requi
             sys.exit(0)
 
 
+def is_port_in_use(port: int, host: str = "127.0.0.1") -> bool:
+    """Check if server is already running on port."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex((host, port)) == 0
+
+
+def open_browser_delayed(url: str, delay: float = 1.0):
+    """Open browser in a detached thread after server has initialized."""
+    def _open():
+        time.sleep(delay)
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
+    threading.Thread(target=_open, daemon=True).start()
+
+
 def load_env_file(filepath: str = ".env") -> dict:
     """Parse key-value pairs from .env if present."""
     env_vars = {}
@@ -110,7 +131,7 @@ def run_guided_setup():
 
     # Step 0: Check if existing configuration exists
     if existing_env.get("SUPABASE_URL"):
-        print(f"\n[FOUND] Existing configuration found in .env (Supabase URL: {existing_env.get('SUPABASE_URL')})")
+        print(f"\n[FOUND] Existing configuration found in .env (Supabase: {existing_env.get('SUPABASE_URL')})")
         use_existing = prompt_bool("Use existing configuration from .env?", default=True)
         if use_existing:
             config.SUPABASE_URL = existing_env.get("SUPABASE_URL", config.SUPABASE_URL)
@@ -132,11 +153,14 @@ def run_guided_setup():
             print(f"  Workers:       {config.MAX_WORKERS}")
             print(f"  Cluster Mode:  {'Redis' if config.REDIS_URL else 'Local SQLite'}")
 
+            launch_gui = prompt_bool("Launch Web GUI (pages/index.html) in browser? [Y/n]", default=True)
             start_now = prompt_bool("\nStart Blast server now?", default=True)
             if start_now:
+                if launch_gui:
+                    open_browser_delayed(f"http://localhost:{config.PORT}/")
                 start_server(config)
             else:
-                print("[BLAST] Setup complete. Run 'blast run' whenever you are ready.")
+                print(f"[BLAST] Setup complete. Web GUI ready at http://localhost:{config.PORT}/ when you run 'blast run'.")
             return
 
     print("\nPlease answer the following questions to configure Blast:\n")
@@ -236,14 +260,18 @@ def run_guided_setup():
     config.PORT = port
     config.REDIS_URL = redis_url
 
-    # Step 8: Launch confirmation
-    start_now = prompt_bool("\nConfiguration complete! Ready to start Blast server now?", default=True)
+    # Step 8: Launch confirmation and GUI
+    launch_gui = prompt_bool("\nOpen Web GUI (pages/index.html) in browser? [Y/n]", default=True)
+    start_now = prompt_bool("Ready to start Blast server now?", default=True)
     if start_now:
+        if launch_gui:
+            open_browser_delayed(f"http://localhost:{port}/")
         print("\n[BLAST] Launching Blast Gateway Server...")
         start_server(config)
     else:
-        print("\n[BLAST] Setup saved. To start Blast later, simply run:")
+        print("\n[BLAST] Setup saved. To start Blast later, run:")
         print("  blast run")
+        print(f"  Web GUI available at: http://localhost:{port}/")
 
 
 def start_server(cfg: BlastConfig):
@@ -282,6 +310,7 @@ def start_server(cfg: BlastConfig):
 
     print("=" * 72)
     print(f"  [STATUS] Blast is RUNNING on http://{cfg.HOST}:{cfg.PORT}")
+    print(f"  [GUI]    Web Dashboard: http://localhost:{cfg.PORT}/ (pages/index.html)")
     print(f"  [TARGET] Supabase Backend: {cfg.SUPABASE_URL}")
     print(f"  [STORAGE] {'Redis (Distributed Cluster)' if cfg.REDIS_URL else 'SQLite (Durable Local)'}")
     print(f"  [WORKERS] {cfg.MAX_WORKERS} active background worker threads")
@@ -304,25 +333,54 @@ def start_server(cfg: BlastConfig):
         logger.info("MAIN", "Blast shutdown completed.")
 
 
+def launch_gui_command():
+    """Effortless GUI launcher command: blast gui"""
+    port = config.PORT
+    url = f"http://localhost:{port}/"
+
+    print("=" * 72)
+    print("  BLAST WEB GUI CONTROLLER")
+    print(f"  Dashboard URL:   {url}")
+    print(f"  Pages Directory: pages/index.html")
+    print("=" * 72)
+
+    if is_port_in_use(port):
+        print(f"[BLAST] Gateway server is ALREADY running on port {port}.")
+        print(f"[BLAST] Opening {url} in your browser...")
+        open_browser_delayed(url, delay=0.2)
+        print("[BLAST] Done. Dashboard is connected to your running instance.")
+    else:
+        print(f"[BLAST] Starting Blast Gateway and launching Web GUI...")
+        open_browser_delayed(url, delay=1.0)
+        start_server(config)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Blast CLI: Security & Queue Gateway for Supabase")
     subparsers = parser.add_subparsers(dest="command")
 
     subparsers.add_parser("cli", help="Start interactive guided questionnaire and run Blast")
+    subparsers.add_parser("gui", help="Directly open Web GUI and connect to Blast gateway")
+
     run_parser = subparsers.add_parser("run", help="Run directly with existing environment / flags")
     run_parser.add_argument("--host", default=config.HOST)
     run_parser.add_argument("--port", type=int, default=config.PORT)
     run_parser.add_argument("--supabase-url", default=config.SUPABASE_URL)
     run_parser.add_argument("--workers", type=int, default=config.MAX_WORKERS)
+    run_parser.add_argument("--open-gui", action="store_true", help="Automatically open web GUI in browser")
 
     args, unknown = parser.parse_known_args()
 
-    if args.command == "run":
+    if args.command == "gui":
+        launch_gui_command()
+    elif args.command == "run":
         if args.supabase_url:
             config.SUPABASE_URL = args.supabase_url
         config.HOST = args.host
         config.PORT = args.port
         config.MAX_WORKERS = args.workers
+        if args.open_gui:
+            open_browser_delayed(f"http://localhost:{args.port}/")
         start_server(config)
     else:
         # Default or 'cli' triggers guided questionnaire

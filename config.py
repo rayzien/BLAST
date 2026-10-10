@@ -8,6 +8,20 @@ from dataclasses import dataclass, field
 from typing import List
 
 
+# Automatically load .env file if present
+_env_path = os.path.join(os.path.dirname(__file__), ".env")
+if os.path.exists(_env_path):
+    try:
+        with open(_env_path, "r", encoding="utf-8") as _f:
+            for _line in _f:
+                _line = _line.strip()
+                if _line and not _line.startswith("#") and "=" in _line:
+                    _k, _v = _line.split("=", 1)
+                    os.environ.setdefault(_k.strip(), _v.strip().strip("'\""))
+    except Exception:
+        pass
+
+
 @dataclass
 class BlastConfig:
     # Cluster and Node Identity
@@ -25,8 +39,8 @@ class BlastConfig:
     DEBUG: bool = os.getenv("BLAST_DEBUG", "false").lower() in ("true", "1", "yes")
 
     # Supabase backend settings
-    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "").rstrip("/")
-    SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "")
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://ylzpjtzeetnvypvikiqa.supabase.co").rstrip("/")
+    SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "sb_publishable_mvS1x5C11_f5uIC9mpGukA_7vsP1jDQ")
     SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
     SUPABASE_TIMEOUT_SECONDS: float = float(os.getenv("SUPABASE_TIMEOUT_SECONDS", "15.0"))
 

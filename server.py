@@ -53,8 +53,8 @@ def create_app(
     # -------------------------------------------------------------
     @app.before_request
     def security_check():
-        # Public endpoints (health check, web GUI, and cluster heartbeats)
-        if request.path in ("/health", "/", "/gui") or request.path.startswith("/v1/cluster/heartbeat"):
+        # Public endpoints (health check, web GUI in pages/, and cluster heartbeats)
+        if request.path in ("/health", "/", "/gui") or request.path.startswith(("/v1/cluster/heartbeat", "/pages")):
             return None
 
         # 1. Firewall validation (methods, payload size, path traversal)
@@ -94,17 +94,29 @@ def create_app(
         return None
 
     # -------------------------------------------------------------
-    # General & Web GUI Endpoints
+    # Web GUI Endpoints (Serving from pages/ folder)
     # -------------------------------------------------------------
     @app.route("/", methods=["GET"])
     @app.route("/gui", methods=["GET"])
     def serve_gui():
-        """Serve the Blast Web GUI."""
-        gui_path = os.path.join(os.path.dirname(__file__), "Demo.html")
-        if os.path.exists(gui_path):
-            with open(gui_path, "r", encoding="utf-8") as f:
+        """Serve the primary Blast Web GUI from pages/index.html."""
+        pages_dir = os.path.join(os.path.dirname(__file__), "pages")
+        index_path = os.path.join(pages_dir, "index.html")
+        if os.path.exists(index_path):
+            with open(index_path, "r", encoding="utf-8") as f:
                 return f.read(), 200, {"Content-Type": "text/html; charset=utf-8"}
-        return jsonify({"message": "Blast Gateway is running. GUI file Demo.html not found."}), 200
+        return jsonify({"message": "Blast Gateway is running. pages/index.html not found."}), 404
+
+    @app.route("/pages/<path:filename>", methods=["GET"])
+    def serve_page(filename: str):
+        """Serve any additional page or asset from the pages/ directory."""
+        pages_dir = os.path.join(os.path.dirname(__file__), "pages")
+        target_file = os.path.join(pages_dir, filename)
+        if os.path.exists(target_file) and os.path.isfile(target_file):
+            content_type = "text/html; charset=utf-8" if filename.endswith((".html", ".htm")) else "application/octet-stream"
+            with open(target_file, "r", encoding="utf-8", errors="ignore") as f:
+                return f.read(), 200, {"Content-Type": content_type}
+        return jsonify({"error": f"Page '{filename}' not found."}), 404
 
     @app.route("/health", methods=["GET"])
     def health():
