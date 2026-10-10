@@ -436,7 +436,7 @@
                             Requests that failed after all retry attempts. You can retry them manually from here.
                         </p>
                     </div>
-                    <button onclick="reloadDlqList()" class="font-chakra text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded transition font-semibold">
+                    <button onclick="reloadDlqList(); reloadSuccessList();" class="font-chakra text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded transition font-semibold">
                         REFRESH
                     </button>
                 </div>
@@ -455,6 +455,39 @@
                             <tr>
                                 <td colspan="4" class="py-6 text-center text-slate-500 font-inter">
                                     No failed jobs. Everything is running smoothly.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Recent Successes Table -->
+            <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5 mt-6">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+                    <div>
+                        <h3 class="font-orbitron text-sm font-bold text-slate-200 tracking-wider uppercase">
+                            Recent Successes
+                        </h3>
+                        <p class="font-inter text-xs text-slate-400 mt-1">
+                            Log of the last 50 completed requests (HTTP 2xx).
+                        </p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left font-jetbrains text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-slate-400 uppercase font-space text-[11px]">
+                                <th class="py-2.5 px-3">Job ID</th>
+                                <th class="py-2.5 px-3">Method</th>
+                                <th class="py-2.5 px-3">Path</th>
+                                <th class="py-2.5 px-3 text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="success-table-entries" class="divide-y divide-slate-800/60">
+                            <tr>
+                                <td colspan="4" class="py-6 text-center text-slate-500 font-inter">
+                                    No recent successes found.
                                 </td>
                             </tr>
                         </tbody>
@@ -953,7 +986,10 @@
             if (activeView) activeView.classList.remove('hidden');
             if (activeBtn) activeBtn.classList.add('active');
 
-            if (tabName === 'dlq') reloadDlqList();
+            if (tabName === 'dlq') {
+                reloadDlqList();
+                reloadSuccessList();
+            }
             if (tabName === 'cluster') reloadClusterGrid();
             if (tabName === 'settings') loadSettingsFromGateway();
         }
@@ -1425,6 +1461,31 @@
             }
         }
 
+        async function reloadSuccessList() {
+            const host = getActiveHost();
+            const key = getActiveKey();
+            const tbody = document.getElementById('success-table-entries');
+            try {
+                const res = await fetch(`${host}/v1/jobs/completed`, {
+                    headers: { 'X-Blast-Key': key }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (!data.items || data.items.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-slate-500 font-inter">No recent successes found.</td></tr>`;
+                        return;
+                    }
+                    tbody.innerHTML = data.items.map(item => `
+                        <tr class="hover:bg-slate-900/50">
+                            <td class="py-2.5 px-3 text-cyan-300">${item.id}</td>
+                            <td class="py-2.5 px-3 text-emerald-300 font-bold">${item.method}</td>
+                            <td class="py-2.5 px-3 text-slate-400">${item.path}</td>
+                            <td class="py-2.5 px-3 text-right text-emerald-400">${item.response_status}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {}
+        }
         async function reloadMeshTopology() {
             const host = getActiveHost();
             const badge = document.getElementById('fastest-route-badge');

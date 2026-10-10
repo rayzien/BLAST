@@ -451,6 +451,15 @@ def create_app(
         items = queue_manager.storage.list_dlq(limit=limit, offset=offset)
         return jsonify({"items": items, "count": len(items)}), 200
 
+    @app.route("/v1/jobs/completed", methods=["GET"])
+    def list_completed_jobs():
+        """List recently completed (successful) jobs."""
+        limit = min(int(request.args.get("limit", 50)), 100)
+        offset = int(request.args.get("offset", 0))
+        jobs = queue_manager.storage.list_jobs(status="completed", limit=limit, offset=offset)
+        items = [j.to_dict() for j in jobs]
+        return jsonify({"items": items, "count": len(items)}), 200
+
     @app.route("/v1/dlq/<job_id>/retry", methods=["POST"])
     def retry_dlq(job_id: str):
         """Retry a job in the dead letter queue."""

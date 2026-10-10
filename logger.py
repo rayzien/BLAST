@@ -57,7 +57,7 @@ class BlastLogger:
     def __init__(
         self,
         name: str = "blast",
-        log_file: Optional[str] = "blast.log",
+        log_file: Optional[str] = os.path.join("logs", "blast.log"),
         level: int = LogLevel.INFO,
         buffer_size: int = 600,
     ):
@@ -126,9 +126,15 @@ class BlastLogger:
             # 3. Write plain uncolored text to persistent log file
             if self.log_file:
                 try:
+                    os.makedirs(os.path.dirname(self.log_file), exist_ok=True)
                     clean_for_file = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", plain_line)
                     with open(self.log_file, "a", encoding="utf-8") as f:
                         f.write(clean_for_file + "\n")
+                    
+                    if "[SUCCESS]" in plain_line:
+                        success_file = os.path.join(os.path.dirname(self.log_file), "success_requests.log")
+                        with open(success_file, "a", encoding="utf-8") as sf:
+                            sf.write(clean_for_file + "\n")
                 except Exception:
                     pass
 

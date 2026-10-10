@@ -237,6 +237,9 @@ class BlastConfig:
             self.PEER_URLS = list(self.SERVER_LINKS)
         elif not self.SERVER_LINKS:
             self.SERVER_LINKS = list(self.PEER_URLS)
+        db_dir = os.path.dirname(self.DB_PATH)
+        if db_dir:
+            os.makedirs(db_dir, exist_ok=True)
         if self.CLUSTER_SECRETS:
             for secret in self.CLUSTER_SECRETS:
                 if secret and secret not in self.API_KEYS:
@@ -291,7 +294,7 @@ class BlastConfig:
     REDIS_URL: str = os.getenv("REDIS_URL", "").strip()
     DB_PATH: str = os.getenv(
         "BLAST_DB_PATH",
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "blast_queue.db"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "blast_queue.db"),
     )
     MAX_WORKERS: int = int(os.getenv("BLAST_MAX_WORKERS", "4"))
     WORKER_POLL_INTERVAL: float = float(os.getenv("BLAST_WORKER_POLL_INTERVAL", "0.2"))

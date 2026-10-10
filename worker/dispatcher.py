@@ -70,7 +70,10 @@ class JobDispatcher:
                     response_body=clean_body,
                 )
                 logger.pathway(f"[QUEUE_COMPLETE] Job {job.id} finalized -> HTTP {clean_status}")
-                logger.worker(f"Job {job.id} completed with HTTP {clean_status}")
+                if 200 <= clean_status < 300:
+                    logger.worker(f"[SUCCESS] Job {job.id} completed with HTTP {clean_status}")
+                else:
+                    logger.worker(f"Job {job.id} completed with HTTP {clean_status}")
                 return
 
             # Transient error, schedule retry
