@@ -1,4 +1,6 @@
-"""Comprehensive test suite for Blast security, queue, and proxy subsystems."""
+"""Comprehensive test suite for Blast security, queue, and proxy subsystems.
+Guaranteed zero emojis.
+"""
 
 import json
 import os
@@ -9,6 +11,7 @@ from config import BlastConfig
 from security.auth import Authenticator
 from security.rate_limiter import TokenBucketRateLimiter
 from security.firewall import Firewall
+from security.checker import SecurityChecker
 from job_queue.models import JobStatus, QueueJob
 from job_queue.storage import SQLiteQueueStorage
 from job_queue.manager import QueueManager
@@ -73,7 +76,6 @@ class TestBlastSecurity(unittest.TestCase):
 
     def test_rate_limiter(self):
         client = "test-client"
-        # Should allow up to burst (3)
         self.assertTrue(self.limiter.check(client)[0])
         self.assertTrue(self.limiter.check(client)[0])
         self.assertTrue(self.limiter.check(client)[0])
@@ -84,23 +86,90 @@ class TestBlastSecurity(unittest.TestCase):
         self.assertGreater(retry_after, 0.0)
 
     def test_firewall_validation(self):
-        # Allowed method
         ok, _ = self.firewall.validate_request("POST", "/rest/v1/orders", 100)
         self.assertTrue(ok)
 
-        # Disallowed method
         ok, err = self.firewall.validate_request("TRACE", "/rest/v1/orders", 100)
         self.assertFalse(ok)
 
-        # Path traversal
         ok, err = self.firewall.validate_request("GET", "/rest/v1/../../etc/passwd", 100)
         self.assertFalse(ok)
         self.assertIn("traversal", err)
 
-        # Oversized payload
         ok, err = self.firewall.validate_request("POST", "/rest/v1/orders", 5000)
         self.assertFalse(ok)
         self.assertIn("exceeds", err)
+
+
+class TestSecurityCheckerSystem(unittest.TestCase):
+    def setUp(self):
+        self.cfg = BlastConfig(API_KEYS=["secret-key"], MAX_PAYLOAD_BYTES=2048)
+        self.checker = SecurityChecker(self.cfg)
+
+    def test_unauthorized_path_rejected(self):
+        # Rogue path not in authorized Supabase API endpoints
+        ok, code, details = self.checker.verify_inbound_request(
+            method="GET",
+            path="/admin/secret_shell",
+            headers={},
+        )
+        self.assertFalse(ok)
+        self.assertEqual(code, "INVALID_PATH")
+
+    def test_sql_injection_rejected(self):
+        # SQL Injection attempt in query params
+        ok, code, details = self.checker.verify_inbound_request(
+            method="GET",
+            path="/rest/v1/users",
+            headers={},
+            query_params={"id": "1; DROP TABLE users --"},
+        )
+        self.assertFalse(ok)
+        self.assertEqual(code, "MALFORMED_QUERY")
+        self.assertIn("malicious SQL", details["message"])
+
+    def test_xss_in_body_rejected(self):
+        # XSS script injection in payload
+        payload = json.dumps({"comment": "<script>alert('pwned')</script>"})
+        ok, code, details = self.checker.verify_inbound_request(
+            method="POST",
+            path="/rest/v1/comments",
+            headers={"Content-Type": "application/json"},
+            body=payload,
+        )
+        self.assertFalse(ok)
+        self.assertEqual(code, "INVALID_PAYLOAD")
+
+    def test_malformed_json_rejected(self):
+        # Malformed JSON syntax
+        bad_json = '{"name": "test", unquoted_key: 123}'
+        ok, code, details = self.checker.verify_inbound_request(
+            method="POST",
+            path="/rest/v1/items",
+            headers={"Content-Type": "application/json"},
+            body=bad_json,
+        )
+        self.assertFalse(ok)
+        self.assertEqual(code, "INVALID_PAYLOAD")
+        self.assertIn("Malformed JSON", details["message"])
+
+    def test_response_sanitization_database_leak(self):
+        # Upstream database error leaking internal schema
+        raw_db_leak = '{"message": "relation \\"public.secrets\\" does not exist", "code": "42P01"}'
+        status, headers, body = self.checker.verify_and_sanitize_response(
+            status_code=400,
+            response_headers={"Server": "cloudflare", "Content-Type": "application/json"},
+            response_body=raw_db_leak,
+        )
+        # Should strip Cloudflare/Server headers
+        self.assertNotIn("Server", headers)
+        self.assertNotIn("server", headers)
+        # Should inject security verification headers
+        self.assertEqual(headers["X-Blast-Security-Verified"], "true")
+        self.assertEqual(headers["X-Content-Type-Options"], "nosniff")
+        # Should scrub raw relation name
+        self.assertNotIn("public.secrets", body)
+        self.assertIn("BLAST_DATABASE_ERROR", body)
 
 
 class TestBlastQueueAndStorage(unittest.TestCase):
@@ -126,7 +195,6 @@ class TestBlastQueueAndStorage(unittest.TestCase):
         )
         self.assertTrue(is_new1)
 
-        # Second enqueue with same key should return existing job
         job2, is_new2 = self.queue_mgr.enqueue(
             method="POST",
             path="/rest/v1/orders",
@@ -138,14 +206,13 @@ class TestBlastQueueAndStorage(unittest.TestCase):
         self.assertEqual(job1.id, job2.id)
 
     def test_fetch_and_lock_pending(self):
-        self.queue_mgr.enqueue(method="POST", path="/task1", client_id="u1")
-        self.queue_mgr.enqueue(method="POST", path="/task2", client_id="u1")
+        self.queue_mgr.enqueue(method="POST", path="/rest/v1/task1", client_id="u1")
+        self.queue_mgr.enqueue(method="POST", path="/rest/v1/task2", client_id="u1")
 
         jobs = self.storage.fetch_and_lock_pending(limit=10)
         self.assertEqual(len(jobs), 2)
         self.assertEqual(jobs[0].status, JobStatus.PROCESSING)
 
-        # Next fetch should return empty since they are locked
         next_jobs = self.storage.fetch_and_lock_pending(limit=10)
         self.assertEqual(len(next_jobs), 0)
 
@@ -183,7 +250,7 @@ class TestJobDispatcherAndDLQ(unittest.TestCase):
         self.assertIn("42", updated_job.response_body)
 
     def test_retry_and_dlq_on_server_error(self):
-        self.dummy_client.return_status = 503  # Transient service unavailable
+        self.dummy_client.return_status = 503
         self.dummy_client.return_body = '{"error": "Supabase overloaded"}'
 
         job = QueueJob(method="POST", path="/rest/v1/todos", max_retries=1)
@@ -233,6 +300,7 @@ class TestBlastAPIIntegration(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json()
         self.assertEqual(data["status"], "healthy")
+        self.assertTrue(data.get("security_checker_active"))
 
     def test_enqueue_via_api(self):
         resp = self.client.post(
@@ -247,7 +315,6 @@ class TestBlastAPIIntegration(unittest.TestCase):
         self.assertTrue(data["is_new"])
         job_id = data["job_id"]
 
-        # Check job status endpoint
         job_resp = self.client.get(
             f"/v1/jobs/{job_id}",
             headers={"X-Blast-Key": "test-key-abc"},
@@ -263,6 +330,17 @@ class TestBlastAPIIntegration(unittest.TestCase):
         )
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.get_json()), 1)
+        self.assertEqual(resp.headers.get("X-Blast-Security-Verified"), "true")
+
+    def test_proxy_bad_request_rejected(self):
+        # Malformed SQL injection in proxy query should return 400 Bad Request
+        resp = self.client.get(
+            "/v1/proxy/rest/v1/items?id=1;%20DROP%20TABLE%20items",
+            headers={"X-Blast-Key": "test-key-abc"},
+        )
+        self.assertEqual(resp.status_code, 400)
+        data = resp.get_json()
+        self.assertEqual(data["code"], "MALFORMED_QUERY")
 
 
 if __name__ == "__main__":

@@ -49,7 +49,8 @@ blast/
 |-- security/
 |   |-- auth.py                 # Constant-time API key validation
 |   |-- rate_limiter.py         # Thread-safe Token Bucket rate limiter
-|   `-- firewall.py             # Request sanitization and size limits
+|   |-- firewall.py             # Request sanitization and size limits
+|   `-- checker.py              # Inbound verification and outbound response sanitizer
 |-- job_queue/
 |   |-- models.py               # QueueJob model and JobStatus enum
 |   |-- storage.py              # WAL-mode SQLite storage engine

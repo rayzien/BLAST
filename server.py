@@ -9,6 +9,7 @@ from config import BlastConfig, config as default_config
 from security.auth import Authenticator
 from security.rate_limiter import TokenBucketRateLimiter
 from security.firewall import Firewall
+from security.checker import SecurityChecker
 from job_queue.manager import QueueManager
 from supabase.client import SupabaseClient
 from supabase.proxy import ProxyHandler
@@ -23,6 +24,7 @@ def create_app(
     supabase_client: Optional[SupabaseClient] = None,
     worker_supervisor: Optional[WorkerSupervisor] = None,
     cluster_manager: Optional[ClusterManager] = None,
+    security_checker: Optional[SecurityChecker] = None,
 ) -> Flask:
     """Application factory for Blast API server."""
     app = Flask(__name__)
@@ -32,6 +34,7 @@ def create_app(
     authenticator = Authenticator(cfg)
     rate_limiter = TokenBucketRateLimiter(cfg)
     firewall = Firewall(cfg)
+    sec_checker = security_checker or SecurityChecker(cfg)
     queue_manager = QueueManager(cfg, storage=storage)
     supabase_client = supabase_client or SupabaseClient(cfg)
     proxy_handler = ProxyHandler(cfg, client=supabase_client, firewall=firewall)
@@ -42,6 +45,7 @@ def create_app(
     app.config["BLAST_STORAGE"] = queue_manager.storage
     app.config["BLAST_QUEUE_MANAGER"] = queue_manager
     app.config["BLAST_CLUSTER_MANAGER"] = cluster_mgr
+    app.config["BLAST_SECURITY_CHECKER"] = sec_checker
 
     # -------------------------------------------------------------
     # Security Middleware
@@ -98,6 +102,7 @@ def create_app(
             "status": "healthy",
             "service": "blast",
             "node_id": cfg.NODE_ID,
+            "security_checker_active": True,
             "workers_running": sup.is_alive() if sup else False,
             "supabase_configured": bool(cfg.SUPABASE_URL),
         })
@@ -138,7 +143,7 @@ def create_app(
     # -------------------------------------------------------------
     @app.route("/v1/queue/<path:target_path>", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
     def enqueue_request(target_path: str):
-        """Enqueue an asynchronous request to be processed reliably to Supabase."""
+        """Enqueue an asynchronous request after security verification to be processed reliably to Supabase."""
         client_id = request.environ.get("blast_client_id", "anonymous")
         idempotency_key = request.headers.get("X-Idempotency-Key") or request.headers.get("Idempotency-Key")
 
@@ -149,10 +154,26 @@ def create_app(
         except ValueError:
             pass
 
-        method = request.args.get("_method", request.method)
+        method = request.args.get("_method", request.method).upper()
         clean_path = f"/{target_path.lstrip('/')}"
         sanitized_headers = firewall.sanitize_headers(dict(request.headers))
         body = request.get_data(as_text=True) if request.data else None
+
+        # Execute Deep Security Checker on Inbound Request
+        is_valid, err_code, err_details = sec_checker.verify_inbound_request(
+            method=method,
+            path=clean_path,
+            headers=dict(request.headers),
+            query_params=dict(request.args),
+            body=body,
+        )
+        if not is_valid:
+            logger.security(f"Rejected bad queued request: {err_code} - {err_details}")
+            return jsonify({
+                "error": "Bad Request - Security Verification Failed",
+                "code": err_code,
+                "details": err_details,
+            }), 400
 
         job, is_new = queue_manager.enqueue(
             method=method,
@@ -165,7 +186,7 @@ def create_app(
             priority=priority,
         )
 
-        logger.queue(f"Enqueued request {method} {clean_path} -> job {job.id} (new={is_new})")
+        logger.queue(f"Verified & enqueued request {method} {clean_path} -> job {job.id} (new={is_new})")
 
         return jsonify({
             "status": "queued" if is_new else "duplicate_idempotent",
@@ -178,7 +199,7 @@ def create_app(
 
     @app.route("/v1/jobs/<job_id>", methods=["GET"])
     def get_job(job_id: str):
-        """Get the current execution status and response of a queued job."""
+        """Get the current execution status and sanitized response of a queued job."""
         job = queue_manager.get_job(job_id)
         if not job:
             return jsonify({"error": "Job not found", "job_id": job_id}), 404
@@ -190,7 +211,9 @@ def create_app(
             except Exception:
                 pass
 
-        return jsonify(data), 200
+        resp = jsonify(data)
+        resp.headers["X-Blast-Security-Verified"] = "true"
+        return resp, 200
 
     @app.route("/v1/queue/stats", methods=["GET"])
     def queue_stats():
@@ -218,10 +241,27 @@ def create_app(
     # -------------------------------------------------------------
     @app.route("/v1/proxy/<path:target_path>", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
     def proxy_request(target_path: str):
-        """Synchronously forward request through Blast security layer directly to Supabase."""
+        """Synchronously forward verified request through Blast directly to Supabase."""
         clean_path = f"/{target_path.lstrip('/')}"
         body = request.get_data(as_text=True) if request.data else None
 
+        # 1. Inbound Security Verification
+        is_valid, err_code, err_details = sec_checker.verify_inbound_request(
+            method=request.method,
+            path=clean_path,
+            headers=dict(request.headers),
+            query_params=dict(request.args),
+            body=body,
+        )
+        if not is_valid:
+            logger.security(f"Rejected bad proxy request: {err_code} - {err_details}")
+            return jsonify({
+                "error": "Bad Request - Security Verification Failed",
+                "code": err_code,
+                "details": err_details,
+            }), 400
+
+        # 2. Upstream Execution
         status_code, resp_headers, resp_body = proxy_handler.forward(
             method=request.method,
             supabase_path=clean_path,
@@ -230,13 +270,20 @@ def create_app(
             body=body,
         )
 
-        flask_resp = Response(
-            resp_body,
-            status=status_code,
-            content_type=resp_headers.get("content-type", "application/json"),
+        # 3. Outbound Response Verification & Sanitization (preventing DB leaks)
+        clean_status, clean_headers, clean_body = sec_checker.verify_and_sanitize_response(
+            status_code=status_code,
+            response_headers=resp_headers,
+            response_body=resp_body,
         )
-        for k, v in resp_headers.items():
-            if k.lower() in ("preference-applied", "content-range", "x-total-count"):
+
+        flask_resp = Response(
+            clean_body,
+            status=clean_status,
+            content_type=clean_headers.get("content-type", "application/json"),
+        )
+        for k, v in clean_headers.items():
+            if k.lower() in ("preference-applied", "content-range", "x-total-count", "x-content-type-options", "x-frame-options", "x-xss-protection", "x-blast-security-verified"):
                 flask_resp.headers[k] = v
 
         return flask_resp
