@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "blast"
-version = "1.2.0"
+version = "1.2.1"
 description = "High-Performance Security, Queue, and Clustering Gateway for Supabase"
 readme = "README.md"
 requires-python = ">=3.9"

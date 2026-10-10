@@ -2,11 +2,11 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Set environment variables
+# Set environment variables (PORT defaults to 8080, but can be dynamically overridden by Render/Cloud platforms)
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     BLAST_HOST=0.0.0.0 \
-    BLAST_PORT=8080
+    PORT=8080
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -21,12 +21,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 RUN pip install --no-cache-dir -e .
 
-# Expose Blast gateway port
+# Expose Blast gateway ports
 EXPOSE 8080
+EXPOSE 8000
 
-# Health check
+# Health check dynamically checks the active PORT
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD sh -c "curl -f http://localhost:\${PORT:-8080}/health || exit 1"
 
 # Default execution entrypoint
 CMD ["python3", "main.py"]

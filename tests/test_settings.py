@@ -9,7 +9,7 @@ import os
 import json
 import tempfile
 import unittest
-from config import BlastConfig
+from config import BlastConfig, resolve_port, get_credentials, get_setting, load_settings
 from security.auth import Authenticator
 from supabase.client import SupabaseClient
 from cluster.peer_manager import ClusterManager
@@ -225,6 +225,52 @@ class TestSettingsServerEndpoints(unittest.TestCase):
             headers={"X-Blast-Key": "cluster-mesh-shared-300"}
         )
         self.assertEqual(resp.status_code, 200)
+
+
+class TestUniversalSettingsAndPort(unittest.TestCase):
+    """Test PORT precedence resolution and universal settings.json accessors."""
+
+    def test_resolve_port_precedence_cloud_port(self):
+        old_port = os.environ.get("PORT")
+        old_blast_port = os.environ.get("BLAST_PORT")
+        try:
+            # When Render sets PORT=8000, resolve_port must return 8000
+            os.environ["PORT"] = "8000"
+            os.environ["BLAST_PORT"] = "8080"
+            self.assertEqual(resolve_port(), 8000)
+
+            # When only BLAST_PORT is set, return BLAST_PORT
+            del os.environ["PORT"]
+            os.environ["BLAST_PORT"] = "9090"
+            self.assertEqual(resolve_port(), 9090)
+        finally:
+            if old_port is not None:
+                os.environ["PORT"] = old_port
+            elif "PORT" in os.environ:
+                del os.environ["PORT"]
+            if old_blast_port is not None:
+                os.environ["BLAST_PORT"] = old_blast_port
+            elif "BLAST_PORT" in os.environ:
+                del os.environ["BLAST_PORT"]
+
+    def test_get_credentials_and_get_setting(self):
+        creds = get_credentials()
+        self.assertIn("supabase_url", creds)
+        self.assertIn("supabase_anon_key", creds)
+        self.assertIn("blast_api_key_1", creds)
+        self.assertIn("blast_cluster_secret", creds)
+
+        # get_setting lookup
+        rate_rps = get_setting("rate_limit_rps")
+        self.assertIsNotNone(rate_rps)
+
+    def test_supabase_client_unconfigured_error(self):
+        cfg = BlastConfig(SUPABASE_URL="")
+        client = SupabaseClient(cfg)
+        status, headers, body = client.execute("GET", "/rest/v1/test")
+        self.assertEqual(status, 503)
+        self.assertIn("SUPABASE_NOT_CONFIGURED", body)
+        client.close()
 
 
 if __name__ == "__main__":

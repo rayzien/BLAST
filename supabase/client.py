@@ -61,6 +61,9 @@ class SupabaseClient:
         if not path.startswith("/"):
             path = "/" + path
 
+        if not self.base_url:
+            return 503, {"content-type": "application/json"}, '{"error": "SUPABASE_NOT_CONFIGURED", "message": "Supabase target URL is not configured. Set supabase_url in settings.json or through the Web GUI."}'
+
         target_url = f"{self.base_url}{path}"
         effective_headers = self.prepare_headers(headers)
         start_time = time.perf_counter()

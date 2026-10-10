@@ -30,8 +30,8 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Blast: Security & Queue Gateway for Supabase (App > Blast > Supabase)"
     )
-    parser.add_argument("--host", default=config.HOST, help="Host interface to bind (default: 0.0.0.0)")
-    parser.add_argument("--port", type=int, default=config.PORT, help="Port to listen on (default: 8080)")
+    parser.add_argument("--host", default=config.HOST, help=f"Host interface to bind (default: {config.HOST})")
+    parser.add_argument("--port", type=int, default=config.PORT, help=f"Port to listen on (default: {config.PORT})")
     parser.add_argument("--supabase-url", default=config.SUPABASE_URL, help="Supabase project base URL")
     parser.add_argument("--supabase-anon-key", default=config.SUPABASE_ANON_KEY, help="Supabase anon key")
     parser.add_argument("--supabase-service-key", default=config.SUPABASE_SERVICE_ROLE_KEY, help="Supabase service role key")
@@ -118,6 +118,8 @@ def main():
     signal.signal(signal.SIGTERM, handle_exit)
 
     # 5. Run HTTP Server
+    if os.getenv("PORT"):
+        logger.info(f"Cloud environment PORT={os.getenv('PORT')} detected. Binding to port {config.PORT}.")
     logger.info(f"Starting Blast server on {config.HOST}:{config.PORT}...")
     run_simple(
         hostname=config.HOST,

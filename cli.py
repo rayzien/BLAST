@@ -14,8 +14,9 @@ import socket
 import threading
 import time
 import webbrowser
+import json
 from typing import Optional
-from config import config, BlastConfig
+from config import config, BlastConfig, load_settings, get_credentials
 from logger import logger
 from job_queue.storage import SQLiteQueueStorage
 from job_queue.redis_storage import RedisQueueStorage
@@ -126,6 +127,19 @@ def save_env_file(env_vars: dict, filepath: str = ".env"):
         print(f"[WARN] Failed to write {target_path}: {e}")
 
 
+def save_settings_file(data: dict):
+    """Persist settings to settings.json for private repositories and crash resilience."""
+    target_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.json")
+    try:
+        current = load_settings()
+        current.update(data)
+        with open(target_path, "w", encoding="utf-8") as f:
+            json.dump(current, f, indent=2)
+        print(f"[BLAST] Successfully saved configuration to {target_path}")
+    except Exception as e:
+        print(f"[WARN] Failed to write {target_path}: {e}")
+
+
 def run_guided_setup():
     """Step-by-step guided questionnaire with y/n prompts."""
     print("=" * 72)
@@ -135,21 +149,25 @@ def run_guided_setup():
     print("  Zero Emojis Mode: Active")
     print("=" * 72)
 
+    settings_data = load_settings()
     existing_env = load_env_file(".env")
 
-    # Step 0: Check if existing configuration exists
-    if existing_env.get("SUPABASE_URL"):
-        print(f"\n[FOUND] Existing configuration found in .env (Supabase: {existing_env.get('SUPABASE_URL')})")
-        use_existing = prompt_bool("Use existing configuration from .env?", default=True)
+    # Step 0: Check if existing configuration exists in settings.json or .env
+    detected_url = settings_data.get("supabase_url") or existing_env.get("SUPABASE_URL")
+    if detected_url:
+        src = "settings.json" if settings_data.get("supabase_url") else ".env"
+        print(f"\n[FOUND] Existing configuration found in {src} (Supabase: {detected_url})")
+        use_existing = prompt_bool(f"Use existing configuration from {src}?", default=True)
         if use_existing:
-            config.SUPABASE_URL = existing_env.get("SUPABASE_URL", config.SUPABASE_URL)
-            config.SUPABASE_ANON_KEY = existing_env.get("SUPABASE_ANON_KEY", config.SUPABASE_ANON_KEY)
-            config.SUPABASE_SERVICE_ROLE_KEY = existing_env.get("SUPABASE_SERVICE_ROLE_KEY", config.SUPABASE_SERVICE_ROLE_KEY)
-            if existing_env.get("BLAST_API_KEYS"):
-                config.API_KEYS = [k.strip() for k in existing_env["BLAST_API_KEYS"].split(",") if k.strip()]
-            if existing_env.get("BLAST_PORT"):
+            creds = get_credentials()
+            config.SUPABASE_URL = creds.get("supabase_url", config.SUPABASE_URL)
+            config.SUPABASE_ANON_KEY = creds.get("supabase_anon_key", config.SUPABASE_ANON_KEY)
+            config.SUPABASE_SERVICE_ROLE_KEY = creds.get("supabase_service_role_key", config.SUPABASE_SERVICE_ROLE_KEY)
+            if creds.get("blast_api_key_1"):
+                config.API_KEYS = [creds["blast_api_key_1"]]
+            if settings_data.get("blast_port") or existing_env.get("BLAST_PORT"):
                 try:
-                    config.PORT = int(existing_env["BLAST_PORT"])
+                    config.PORT = int(settings_data.get("blast_port") or existing_env.get("BLAST_PORT"))
                 except ValueError:
                     pass
             if existing_env.get("REDIS_URL"):
@@ -246,8 +264,8 @@ def run_guided_setup():
         except ValueError:
             port = 8080
 
-    # Step 7: Save to .env
-    should_save = prompt_bool("\nSave this configuration to .env for automatic future runs?", default=True)
+    # Step 7: Save to .env and settings.json
+    should_save = prompt_bool("\nSave this configuration to .env and settings.json for automatic future runs?", default=True)
     if should_save:
         save_env_file({
             "SUPABASE_URL": sup_url.rstrip("/"),
@@ -257,6 +275,13 @@ def run_guided_setup():
             "BLAST_API_KEYS": blast_key,
             "BLAST_PORT": str(port),
             "REDIS_URL": redis_url,
+        })
+        save_settings_file({
+            "supabase_url": sup_url.rstrip("/"),
+            "supabase_anon_key": sup_anon,
+            "supabase_service_role_key": sup_service,
+            "blast_api_key_1": blast_key or "blast-secret-key-1",
+            "blast_port": port,
         })
 
     # Apply configuration

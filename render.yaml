@@ -14,7 +14,7 @@ services:
     envVars:
       - key: BLAST_HOST
         value: 0.0.0.0
-      - key: BLAST_PORT
+      - key: PORT
         value: 8080
       - key: SUPABASE_URL
         sync: false

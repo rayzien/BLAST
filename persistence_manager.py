@@ -57,7 +57,7 @@ class PersistenceManager:
                 try:
                     with open(self.settings_json_path, "r", encoding="utf-8") as jf:
                         s_data = json.load(jf)
-                        if (not sup_url or sup_url == "https://ylzpjtzeetnvypvikiqa.supabase.co") and s_data.get("supabase_url"):
+                        if not sup_url and s_data.get("supabase_url"):
                             sup_url = s_data["supabase_url"]
                         if not sup_anon and s_data.get("supabase_anon_key"):
                             sup_anon = s_data["supabase_anon_key"]

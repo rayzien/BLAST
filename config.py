@@ -6,61 +6,146 @@ import os
 import json
 import uuid
 from dataclasses import dataclass, field
-from typing import List
+from typing import Any, Dict, List, Optional
 
 
-# Automatically load settings.json if present (persistent credentials for private repos & free tier)
-_settings_json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.json")
-if os.path.exists(_settings_json_path):
-    try:
-        def _apply_setting_val(env_k: str, v: Any):
-            if v is not None and str(v).strip():
-                cur = os.environ.get(env_k)
-                if cur is None or cur.strip() == "":
-                    os.environ[env_k] = str(v).strip()
+# Path to settings.json (persistent credentials for private repos and free tier)
+_settings_json_path = os.getenv(
+    "BLAST_SETTINGS_FILE",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.json"),
+)
 
-        with open(_settings_json_path, "r", encoding="utf-8") as _jf:
-            _s_data = json.load(_jf)
-            _apply_setting_val("SUPABASE_URL", _s_data.get("supabase_url"))
-            _apply_setting_val("SUPABASE_ANON_KEY", _s_data.get("supabase_anon_key"))
-            if _s_data.get("supabase_service_role_key"):
-                _apply_setting_val("SUPABASE_SERVICE_ROLE_KEY", _s_data.get("supabase_service_role_key"))
-            _apply_setting_val("BLAST_CLUSTER_SECRET", _s_data.get("blast_cluster_secret"))
 
-            _keys = []
-            if _s_data.get("blast_api_key_1"):
-                _keys.append(str(_s_data["blast_api_key_1"]).strip())
-            if _s_data.get("blast_api_key_2"):
-                _keys.append(str(_s_data["blast_api_key_2"]).strip())
-            if _keys:
-                _apply_setting_val("BLAST_API_KEYS", ",".join(_keys))
-            elif _s_data.get("blast_api_keys"):
-                _apply_setting_val("BLAST_API_KEYS", str(_s_data["blast_api_keys"]).strip())
+def load_settings(path: Optional[str] = None) -> Dict[str, Any]:
+    """Universal loader for settings.json available to all files and subsystems."""
+    target = path or _settings_json_path
+    if os.path.exists(target):
+        try:
+            with open(target, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    return data
+        except Exception:
+            pass
+    return {}
 
-            if "max_workers" in _s_data:
-                _apply_setting_val("BLAST_MAX_WORKERS", str(_s_data["max_workers"]))
-            if "rate_limit_rps" in _s_data:
-                _apply_setting_val("BLAST_RATE_LIMIT_RPS", str(_s_data["rate_limit_rps"]))
-            if "rate_limit_burst" in _s_data:
-                _apply_setting_val("BLAST_RATE_LIMIT_BURST", str(_s_data["rate_limit_burst"]))
-            if "blast_port" in _s_data or "port" in _s_data:
-                _apply_setting_val("BLAST_PORT", str(_s_data.get("blast_port") or _s_data.get("port")))
-            if "blast_host" in _s_data or "host" in _s_data:
-                _apply_setting_val("BLAST_HOST", str(_s_data.get("blast_host") or _s_data.get("host")))
-            if "mesh_routing_enabled" in _s_data:
-                _apply_setting_val("BLAST_MESH_ROUTING_ENABLED", str(_s_data["mesh_routing_enabled"]).lower())
-            if "awake_enabled" in _s_data:
-                _apply_setting_val("BLAST_AWAKE_ENABLED", str(_s_data["awake_enabled"]).lower())
-            if "awake_interval_seconds" in _s_data:
-                _apply_setting_val("BLAST_AWAKE_INTERVAL_SECONDS", str(_s_data["awake_interval_seconds"]))
-            if "awake_ping_self" in _s_data:
-                _apply_setting_val("BLAST_AWAKE_PING_SELF", str(_s_data["awake_ping_self"]).lower())
-            if "awake_ping_supabase" in _s_data:
-                _apply_setting_val("BLAST_AWAKE_PING_SUPABASE", str(_s_data["awake_ping_supabase"]).lower())
-            if "awake_ping_peers" in _s_data:
-                _apply_setting_val("BLAST_AWAKE_PING_PEERS", str(_s_data["awake_ping_peers"]).lower())
-    except Exception:
-        pass
+
+def get_setting(key: str, default: Any = None) -> Any:
+    """Universal setting retriever: checks environment first, then settings.json, then default."""
+    # 1. Direct environment variable match
+    env_keys = [key.upper(), f"BLAST_{key.upper()}"]
+    for ek in env_keys:
+        if ek in os.environ and os.environ[ek].strip():
+            return os.environ[ek].strip()
+
+    # 2. settings.json match
+    s_data = load_settings()
+    for sk in (key.lower(), key):
+        if sk in s_data and s_data[sk] is not None:
+            return s_data[sk]
+
+    return default
+
+
+def get_credentials() -> Dict[str, str]:
+    """Universal credential retriever for any file in Blast.
+    Returns clean dictionary of credentials loaded from settings.json and environment.
+    """
+    s = load_settings()
+    k1 = os.getenv("BLAST_API_KEY_1") or s.get("blast_api_key_1") or ""
+    k2 = os.getenv("BLAST_API_KEY_2") or s.get("blast_api_key_2") or ""
+    c_sec = os.getenv("BLAST_CLUSTER_SECRET") or s.get("blast_cluster_secret") or ""
+
+    if not k1 and not k2:
+        raw_keys = os.getenv("BLAST_API_KEYS", "")
+        if raw_keys:
+            parts = [p.strip() for p in raw_keys.split(",") if p.strip()]
+            if parts:
+                k1 = parts[0]
+            if len(parts) > 1:
+                k2 = parts[1]
+
+    return {
+        "supabase_url": str(os.getenv("SUPABASE_URL") or s.get("supabase_url") or "").strip().rstrip("/"),
+        "supabase_anon_key": str(os.getenv("SUPABASE_ANON_KEY") or s.get("supabase_anon_key") or "").strip(),
+        "supabase_service_role_key": str(os.getenv("SUPABASE_SERVICE_ROLE_KEY") or s.get("supabase_service_role_key") or "").strip(),
+        "blast_api_key_1": str(k1).strip() or "blast-secret-key-1",
+        "blast_api_key_2": str(k2).strip() or "blast-dev-key",
+        "blast_cluster_secret": str(c_sec).strip() or "blast-cluster-mesh-secret-key",
+    }
+
+
+def resolve_port() -> int:
+    """Resolve active port with precedence:
+    1. PORT env var (standard for Render, Heroku, Cloud Run)
+    2. BLAST_PORT env var
+    3. settings.json blast_port or port
+    4. Default 8080
+    """
+    for env_var in ("PORT", "BLAST_PORT"):
+        val = os.getenv(env_var)
+        if val and str(val).strip():
+            try:
+                return int(str(val).strip())
+            except ValueError:
+                pass
+
+    s = load_settings()
+    for k in ("blast_port", "port"):
+        if k in s and s[k] is not None:
+            try:
+                return int(str(s[k]).strip())
+            except ValueError:
+                pass
+
+    return 8080
+
+
+# Automatically populate environment defaults from settings.json if not already in env
+_initial_settings = load_settings()
+if _initial_settings:
+    def _apply_setting_val(env_k: str, v: Any):
+        if v is not None and str(v).strip():
+            cur = os.environ.get(env_k)
+            if cur is None or cur.strip() == "":
+                os.environ[env_k] = str(v).strip()
+
+    _apply_setting_val("SUPABASE_URL", _initial_settings.get("supabase_url"))
+    _apply_setting_val("SUPABASE_ANON_KEY", _initial_settings.get("supabase_anon_key"))
+    if _initial_settings.get("supabase_service_role_key"):
+        _apply_setting_val("SUPABASE_SERVICE_ROLE_KEY", _initial_settings.get("supabase_service_role_key"))
+    _apply_setting_val("BLAST_CLUSTER_SECRET", _initial_settings.get("blast_cluster_secret"))
+
+    _keys = []
+    if _initial_settings.get("blast_api_key_1"):
+        _keys.append(str(_initial_settings["blast_api_key_1"]).strip())
+    if _initial_settings.get("blast_api_key_2"):
+        _keys.append(str(_initial_settings["blast_api_key_2"]).strip())
+    if _keys:
+        _apply_setting_val("BLAST_API_KEYS", ",".join(_keys))
+    elif _initial_settings.get("blast_api_keys"):
+        _apply_setting_val("BLAST_API_KEYS", str(_initial_settings["blast_api_keys"]).strip())
+
+    if "max_workers" in _initial_settings:
+        _apply_setting_val("BLAST_MAX_WORKERS", str(_initial_settings["max_workers"]))
+    if "rate_limit_rps" in _initial_settings:
+        _apply_setting_val("BLAST_RATE_LIMIT_RPS", str(_initial_settings["rate_limit_rps"]))
+    if "rate_limit_burst" in _initial_settings:
+        _apply_setting_val("BLAST_RATE_LIMIT_BURST", str(_initial_settings["rate_limit_burst"]))
+    if "blast_host" in _initial_settings or "host" in _initial_settings:
+        _apply_setting_val("BLAST_HOST", str(_initial_settings.get("blast_host") or _initial_settings.get("host")))
+    if "mesh_routing_enabled" in _initial_settings:
+        _apply_setting_val("BLAST_MESH_ROUTING_ENABLED", str(_initial_settings["mesh_routing_enabled"]).lower())
+    if "awake_enabled" in _initial_settings:
+        _apply_setting_val("BLAST_AWAKE_ENABLED", str(_initial_settings["awake_enabled"]).lower())
+    if "awake_interval_seconds" in _initial_settings:
+        _apply_setting_val("BLAST_AWAKE_INTERVAL_SECONDS", str(_initial_settings["awake_interval_seconds"]))
+    if "awake_ping_self" in _initial_settings:
+        _apply_setting_val("BLAST_AWAKE_PING_SELF", str(_initial_settings["awake_ping_self"]).lower())
+    if "awake_ping_supabase" in _initial_settings:
+        _apply_setting_val("BLAST_AWAKE_PING_SUPABASE", str(_initial_settings["awake_ping_supabase"]).lower())
+    if "awake_ping_peers" in _initial_settings:
+        _apply_setting_val("BLAST_AWAKE_PING_PEERS", str(_initial_settings["awake_ping_peers"]).lower())
 
 
 # Automatically load .env file if present
@@ -93,6 +178,23 @@ def _get_combined_peers() -> List[str]:
     return res
 
 
+def _resolve_api_keys() -> List[str]:
+    raw = os.getenv("BLAST_API_KEYS", "")
+    if raw.strip():
+        keys = [k.strip() for k in raw.split(",") if k.strip()]
+        if keys:
+            return keys
+    s = load_settings()
+    keys = []
+    if s.get("blast_api_key_1"):
+        keys.append(str(s["blast_api_key_1"]).strip())
+    if s.get("blast_api_key_2"):
+        keys.append(str(s["blast_api_key_2"]).strip())
+    if keys:
+        return keys
+    return ["blast-secret-key-1", "blast-dev-key"]
+
+
 @dataclass
 class BlastConfig:
     # Role Settings: Every instance is both a Worker and a Dispatcher by default
@@ -102,15 +204,14 @@ class BlastConfig:
 
     # Cluster and Node Identity
     NODE_ID: str = os.getenv("BLAST_NODE_ID", f"node-{uuid.uuid4().hex[:8]}")
-    
-    # Public URL for multi-Render deployments (Render automatically supplies RENDER_EXTERNAL_URL)
+
+    # Public URL and port for multi-Render deployments
     HOST: str = os.getenv("BLAST_HOST", "0.0.0.0")
-    PORT: int = int(os.getenv("PORT", os.getenv("BLAST_PORT", "8080")))
+    PORT: int = field(default_factory=resolve_port)
     PUBLIC_URL: str = os.getenv("BLAST_PUBLIC_URL", os.getenv("RENDER_EXTERNAL_URL", "")).rstrip("/")
 
     def __post_init__(self):
         if not self.PUBLIC_URL:
-            # Fallback to host:port if public URL not explicitly supplied
             self.PUBLIC_URL = f"http://{self.HOST}:{self.PORT}"
         # Ensure PEER_URLS and SERVER_LINKS are populated and synchronized
         if not self.PEER_URLS and not self.SERVER_LINKS:
@@ -131,7 +232,7 @@ class BlastConfig:
 
     DEBUG: bool = os.getenv("BLAST_DEBUG", "false").lower() in ("true", "1", "yes")
     TESTING: bool = os.getenv("BLAST_TESTING", "false").lower() in ("true", "1", "yes")
-    
+
     # 24/7 Keep-Alive Awake Engine (prevents Render 15-min and Supabase 7-day sleep)
     AWAKE_ENABLED: bool = os.getenv("BLAST_AWAKE_ENABLED", "true").lower() in ("true", "1", "yes")
     AWAKE_INTERVAL_SECONDS: float = float(os.getenv("BLAST_AWAKE_INTERVAL_SECONDS", "540.0"))
@@ -139,29 +240,33 @@ class BlastConfig:
     AWAKE_PING_SUPABASE: bool = os.getenv("BLAST_AWAKE_PING_SUPABASE", "true").lower() in ("true", "1", "yes")
     AWAKE_PING_PEERS: bool = os.getenv("BLAST_AWAKE_PING_PEERS", "true").lower() in ("true", "1", "yes")
 
-    # Supabase backend settings
-    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://ylzpjtzeetnvypvikiqa.supabase.co").rstrip("/")
-    SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "sb_publishable_mvS1x5C11_f5uIC9mpGukA_7vsP1jDQ")
-    SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    # Supabase backend settings (Loaded from environment or settings.json; no hardcoding)
+    SUPABASE_URL: str = field(
+        default_factory=lambda: (os.getenv("SUPABASE_URL") or load_settings().get("supabase_url") or "").rstrip("/")
+    )
+    SUPABASE_ANON_KEY: str = field(
+        default_factory=lambda: str(os.getenv("SUPABASE_ANON_KEY") or load_settings().get("supabase_anon_key") or "")
+    )
+    SUPABASE_SERVICE_ROLE_KEY: str = field(
+        default_factory=lambda: str(os.getenv("SUPABASE_SERVICE_ROLE_KEY") or load_settings().get("supabase_service_role_key") or "")
+    )
     SUPABASE_TIMEOUT_SECONDS: float = float(os.getenv("SUPABASE_TIMEOUT_SECONDS", "15.0"))
 
     # Security settings
     REQUIRE_API_KEY: bool = os.getenv("BLAST_REQUIRE_API_KEY", "true").lower() in ("true", "1", "yes")
-    CLUSTER_SECRET: str = os.getenv("BLAST_CLUSTER_SECRET", "blast-cluster-mesh-secret-key")
-    API_KEYS: List[str] = field(
-        default_factory=lambda: [
-            k.strip() for k in os.getenv("BLAST_API_KEYS", "blast-secret-key-1,blast-dev-key").split(",") if k.strip()
-        ]
+    CLUSTER_SECRET: str = field(
+        default_factory=lambda: os.getenv("BLAST_CLUSTER_SECRET") or load_settings().get("blast_cluster_secret") or "blast-cluster-mesh-secret-key"
     )
-    MAX_PAYLOAD_BYTES: int = int(os.getenv("BLAST_MAX_PAYLOAD_BYTES", str(10 * 1024 * 1024)))  # 10 MB default
+    API_KEYS: List[str] = field(default_factory=_resolve_api_keys)
+    MAX_PAYLOAD_BYTES: int = int(os.getenv("BLAST_MAX_PAYLOAD_BYTES", str(10 * 1024 * 1024)))
 
     # Rate limiting (Token Bucket)
     RATE_LIMIT_ENABLED: bool = os.getenv("BLAST_RATE_LIMIT_ENABLED", "true").lower() in ("true", "1", "yes")
-    RATE_LIMIT_RPS: float = float(os.getenv("BLAST_RATE_LIMIT_RPS", "20.0"))  # Refill rate per second
-    RATE_LIMIT_BURST: int = int(os.getenv("BLAST_RATE_LIMIT_BURST", "50"))     # Max burst capacity
+    RATE_LIMIT_RPS: float = float(os.getenv("BLAST_RATE_LIMIT_RPS", "20.0"))
+    RATE_LIMIT_BURST: int = int(os.getenv("BLAST_RATE_LIMIT_BURST", "50"))
 
     # Queue & Worker settings
-    REDIS_URL: str = os.getenv("REDIS_URL", "").strip()  # If set, uses shared distributed Redis queue
+    REDIS_URL: str = os.getenv("REDIS_URL", "").strip()
     DB_PATH: str = os.getenv(
         "BLAST_DB_PATH",
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "blast_queue.db"),
