@@ -1,8 +1,8 @@
-"""Low-level HTTP client for communicating with Supabase backend."""
-
+import time
 import httpx
 from typing import Any, Dict, Optional, Tuple
 from config import BlastConfig
+from logger import logger
 
 
 class SupabaseClient:
@@ -58,6 +58,7 @@ class SupabaseClient:
 
         target_url = f"{self.base_url}{path}"
         effective_headers = self.prepare_headers(headers)
+        start_time = time.perf_counter()
 
         try:
             response = self._client.request(
@@ -67,17 +68,27 @@ class SupabaseClient:
                 params=params,
                 content=body.encode("utf-8") if body is not None else None,
             )
+            elapsed_ms = (time.perf_counter() - start_time) * 1000.0
 
             # Convert response headers to simple dictionary
             resp_headers = {k: v for k, v in response.headers.items() if k.lower() not in ("content-length", "content-encoding")}
 
+            logger.supabase(
+                f"{method.upper()} {path} -> HTTP {response.status_code} ({elapsed_ms:.1f}ms, {len(response.text)} bytes)"
+            )
             return response.status_code, resp_headers, response.text
 
         except httpx.TimeoutException as exc:
+            elapsed_ms = (time.perf_counter() - start_time) * 1000.0
+            logger.error("SUPABASE", f"{method.upper()} {path} -> Timeout after {elapsed_ms:.1f}ms: {exc}")
             return 504, {}, f'{{"error": "Supabase gateway timeout", "details": "{str(exc)}"}}'
         except httpx.RequestError as exc:
+            elapsed_ms = (time.perf_counter() - start_time) * 1000.0
+            logger.error("SUPABASE", f"{method.upper()} {path} -> Request Error after {elapsed_ms:.1f}ms: {exc}")
             return 502, {}, f'{{"error": "Supabase gateway connection error", "details": "{str(exc)}"}}'
         except Exception as exc:
+            elapsed_ms = (time.perf_counter() - start_time) * 1000.0
+            logger.error("SUPABASE", f"{method.upper()} {path} -> Unexpected Exception after {elapsed_ms:.1f}ms: {exc}", exc=exc)
             return 500, {}, f'{{"error": "Internal proxy error", "details": "{str(exc)}"}}'
 
     def close(self):

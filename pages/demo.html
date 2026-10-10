@@ -539,6 +539,68 @@
             </div>
         </div>
 
+        <!-- Serious Live Log Stream & Pathway Diagnostic Terminal (End of Page) -->
+        <section class="mt-8 border border-slate-800 bg-[#070b12] rounded-xl overflow-hidden shadow-2xl">
+            <!-- Header bar -->
+            <div class="px-5 py-3.5 bg-slate-900/90 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <div>
+                        <h3 class="font-orbitron text-xs font-bold text-white tracking-wider uppercase">
+                            LIVE TELEMETRY STREAM &amp; PATHWAY CONSOLE
+                        </h3>
+                        <p class="font-inter text-[11px] text-slate-400">
+                            Real-time gateway logs: Ingress, Security, Mesh Route Scoring, Supabase Dispatch, and Egress
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Right controls & actions -->
+                <div class="flex flex-wrap items-center gap-2 font-chakra text-xs">
+                    <button onclick="triggerLivePathwayTest()" id="btn-trigger-pathway" class="px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded font-semibold tracking-wide transition flex items-center gap-1.5">
+                        <span class="font-mono text-[11px] font-bold">[TEST]</span> TRIGGER LIVE PATHWAY TEST
+                    </button>
+                    <button onclick="toggleLogAutoScroll()" id="btn-autoscroll" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded transition font-mono text-[11px]">
+                        SCROLL: ON
+                    </button>
+                    <button onclick="clearServerLogs()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded transition font-mono text-[11px]">
+                        CLEAR
+                    </button>
+                    <button onclick="copyTerminalLogs()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded transition font-mono text-[11px]">
+                        COPY
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter tabs bar -->
+            <div class="px-5 py-2 bg-slate-950/70 border-b border-slate-800/60 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex flex-wrap items-center gap-1.5 font-space text-[11px]">
+                    <span class="text-slate-500 uppercase font-semibold mr-1">FILTER:</span>
+                    <button onclick="setLogComponentFilter('ALL')" class="log-filter-btn px-2.5 py-0.5 rounded font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40" data-filter="ALL">ALL</button>
+                    <button onclick="setLogComponentFilter('PATHWAY')" class="log-filter-btn px-2.5 py-0.5 rounded font-mono font-bold bg-slate-800/60 text-slate-400 hover:text-white" data-filter="PATHWAY">PATHWAY</button>
+                    <button onclick="setLogComponentFilter('SUPABASE')" class="log-filter-btn px-2.5 py-0.5 rounded font-mono font-bold bg-slate-800/60 text-slate-400 hover:text-white" data-filter="SUPABASE">SUPABASE</button>
+                    <button onclick="setLogComponentFilter('MESH')" class="log-filter-btn px-2.5 py-0.5 rounded font-mono font-bold bg-slate-800/60 text-slate-400 hover:text-white" data-filter="MESH">MESH</button>
+                    <button onclick="setLogComponentFilter('SECURITY')" class="log-filter-btn px-2.5 py-0.5 rounded font-mono font-bold bg-slate-800/60 text-slate-400 hover:text-white" data-filter="SECURITY">SECURITY</button>
+                    <button onclick="setLogComponentFilter('QUEUE')" class="log-filter-btn px-2.5 py-0.5 rounded font-mono font-bold bg-slate-800/60 text-slate-400 hover:text-white" data-filter="QUEUE">QUEUE</button>
+                    <button onclick="setLogComponentFilter('WORKER')" class="log-filter-btn px-2.5 py-0.5 rounded font-mono font-bold bg-slate-800/60 text-slate-400 hover:text-white" data-filter="WORKER">WORKER</button>
+                </div>
+                <div id="log-count-display" class="font-mono text-[11px] text-slate-500">
+                    Showing 0 logs
+                </div>
+            </div>
+
+            <!-- Terminal output body -->
+            <div id="live-telemetry-terminal" class="h-80 overflow-y-auto p-4 font-jetbrains text-xs bg-[#040711] space-y-1 text-slate-300 select-text">
+                <div class="text-slate-600 italic font-mono">[STANDBY] Connecting to Blast gateway live telemetry log stream...</div>
+            </div>
+
+            <!-- Terminal status footer -->
+            <div class="px-5 py-2 bg-slate-950 border-t border-slate-900 flex justify-between items-center text-[11px] font-sharetech text-slate-500">
+                <span>BUFFER: IN-MEMORY RING CACHE (600 ENTRIES MAX)</span>
+                <span>DESTINATION: APP &gt; BLAST &gt; FASTEST ROUTE &gt; SUPABASE &gt; APP</span>
+            </div>
+        </section>
+
     </main>
 
     <!-- Footer -->
@@ -911,10 +973,167 @@
             reloadMeshTopology();
         }
 
+        // =============================================================
+        // Live Telemetry Stream & Pathway Logging
+        // =============================================================
+        let lastLogId = 0;
+        let logAutoScroll = true;
+        let currentLogComponentFilter = 'ALL';
+        let allBufferedLogs = [];
+
+        function escapeLogText(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        async function pollLiveLogs() {
+            const host = getActiveHost();
+            const term = document.getElementById('live-telemetry-terminal');
+            if (!term) return;
+
+            try {
+                const res = await fetch(`${host}/v1/logs?since_id=${lastLogId}&limit=120`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.logs && data.logs.length > 0) {
+                        for (const log of data.logs) {
+                            if (log.id > lastLogId) {
+                                lastLogId = log.id;
+                            }
+                            allBufferedLogs.push(log);
+                        }
+                        if (allBufferedLogs.length > 500) {
+                            allBufferedLogs = allBufferedLogs.slice(-500);
+                        }
+                        renderLogs();
+                    }
+                }
+            } catch (e) {}
+        }
+
+        function renderLogs() {
+            const term = document.getElementById('live-telemetry-terminal');
+            const countDisp = document.getElementById('log-count-display');
+            if (!term) return;
+
+            const filtered = currentLogComponentFilter === 'ALL'
+                ? allBufferedLogs
+                : allBufferedLogs.filter(l => l.component && l.component.toUpperCase() === currentLogComponentFilter);
+
+            if (countDisp) {
+                countDisp.innerText = `Showing ${filtered.length} logs (${allBufferedLogs.length} total)`;
+            }
+
+            if (filtered.length === 0) {
+                term.innerHTML = `<div class="text-slate-600 italic font-mono">[EMPTY] No log events found matching filter '${currentLogComponentFilter}'.</div>`;
+                return;
+            }
+
+            const html = filtered.map(log => {
+                let lvlColor = 'text-emerald-400';
+                if (log.level === 'WARN') lvlColor = 'text-amber-400 font-bold';
+                if (log.level === 'ERROR') lvlColor = 'text-rose-400 font-bold';
+
+                let compColor = 'text-cyan-400';
+                if (log.component === 'PATHWAY') compColor = 'text-fuchsia-400 font-bold';
+                else if (log.component === 'SUPABASE') compColor = 'text-cyan-300 font-bold';
+                else if (log.component === 'MESH') compColor = 'text-blue-400 font-bold';
+                else if (log.component === 'SECURITY') compColor = 'text-amber-400 font-bold';
+                else if (log.component === 'QUEUE') compColor = 'text-emerald-400 font-bold';
+                else if (log.component === 'WORKER') compColor = 'text-violet-400 font-bold';
+
+                return `
+                    <div class="py-0.5 leading-relaxed font-mono flex items-start gap-2 hover:bg-slate-900/60 rounded px-1 transition-colors">
+                        <span class="text-slate-500 shrink-0 font-jetbrains text-[11px]">[${log.timestamp}]</span>
+                        <span class="${lvlColor} shrink-0 text-[11px] font-bold">[${log.level}]</span>
+                        <span class="${compColor} shrink-0 text-[11px]">[${log.component}]</span>
+                        <span class="text-slate-200 break-all">${escapeLogText(log.message)}</span>
+                    </div>
+                `;
+            }).join('');
+
+            term.innerHTML = html;
+
+            if (logAutoScroll) {
+                term.scrollTop = term.scrollHeight;
+            }
+        }
+
+        async function triggerLivePathwayTest() {
+            const host = getActiveHost();
+            const btn = document.getElementById('btn-trigger-pathway');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="font-mono text-[11px] font-bold">[TESTING]</span> EXECUTING PATHWAY...`;
+            }
+
+            try {
+                const res = await fetch(`${host}/v1/test/pathway`, { method: 'POST' });
+                const data = await res.json();
+                await pollLiveLogs();
+            } catch (err) {
+                alert('Pathway test failed: ' + err.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span class="font-mono text-[11px] font-bold">[TEST]</span> TRIGGER LIVE PATHWAY TEST`;
+                }
+            }
+        }
+
+        function toggleLogAutoScroll() {
+            logAutoScroll = !logAutoScroll;
+            const btn = document.getElementById('btn-autoscroll');
+            if (btn) {
+                btn.innerText = logAutoScroll ? 'SCROLL: ON' : 'SCROLL: OFF';
+                btn.className = logAutoScroll
+                    ? 'px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded transition font-mono text-[11px]'
+                    : 'px-2.5 py-1.5 bg-rose-950/40 text-rose-300 border border-rose-500/30 rounded transition font-mono text-[11px]';
+            }
+        }
+
+        async function clearServerLogs() {
+            const host = getActiveHost();
+            try {
+                await fetch(`${host}/v1/logs`, { method: 'DELETE' });
+                allBufferedLogs = [];
+                lastLogId = 0;
+                renderLogs();
+            } catch (e) {}
+        }
+
+        function setLogComponentFilter(filter) {
+            currentLogComponentFilter = filter;
+            document.querySelectorAll('.log-filter-btn').forEach(btn => {
+                if (btn.getAttribute('data-filter') === filter) {
+                    btn.className = 'log-filter-btn px-2.5 py-0.5 rounded font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40';
+                } else {
+                    btn.className = 'log-filter-btn px-2.5 py-0.5 rounded font-mono font-bold bg-slate-800/60 text-slate-400 hover:text-white';
+                }
+            });
+            renderLogs();
+        }
+
+        function copyTerminalLogs() {
+            const lines = allBufferedLogs.map(l => `[${l.timestamp}] [${l.level}] [${l.component}] ${l.message}`).join('\n');
+            navigator.clipboard.writeText(lines).then(() => {
+                alert(`Copied ${allBufferedLogs.length} log lines to clipboard.`);
+            }).catch(() => {
+                alert('Could not access clipboard.');
+            });
+        }
+
         // Initialize and start background heartbeat
         initConnectionParams();
         reconnectGateway();
         setInterval(reconnectGateway, 4000);
+        pollLiveLogs();
+        setInterval(pollLiveLogs, 1200);
     </script>
 </body>
 </html>

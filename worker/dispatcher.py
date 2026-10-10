@@ -46,6 +46,7 @@ class JobDispatcher:
 
         # 2. Upstream Execution
         try:
+            logger.pathway(f"[QUEUE_EXEC] Dispatching job {job.id} -> Supabase {job.method} {job.path}")
             status_code, resp_headers, resp_body = self.supabase_client.execute(
                 method=job.method,
                 path=job.path,
@@ -68,6 +69,7 @@ class JobDispatcher:
                     response_status=clean_status,
                     response_body=clean_body,
                 )
+                logger.pathway(f"[QUEUE_COMPLETE] Job {job.id} finalized -> HTTP {clean_status}")
                 logger.worker(f"Job {job.id} completed with HTTP {clean_status}")
                 return
 

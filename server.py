@@ -4,6 +4,7 @@ Guaranteed zero emojis.
 
 import os
 import json
+import time
 from typing import Optional, Any
 from flask import Flask, request, jsonify, Response
 from config import BlastConfig, config as default_config
@@ -58,8 +59,8 @@ def create_app(
     # -------------------------------------------------------------
     @app.before_request
     def security_check():
-        # Public endpoints (health check, web GUI in pages/, and cluster/mesh heartbeats)
-        if request.path in ("/health", "/", "/gui") or request.path.startswith(("/v1/cluster/heartbeat", "/pages")):
+        # Public endpoints (health check, web GUI in pages/, cluster/mesh heartbeats, live logs, test pathway)
+        if request.path in ("/health", "/", "/gui", "/v1/test/pathway") or request.path.startswith(("/v1/cluster/heartbeat", "/pages", "/v1/logs")):
             return None
 
         # 1. Firewall validation (methods, payload size, path traversal)
@@ -180,6 +181,97 @@ def create_app(
         }), 200
 
     # -------------------------------------------------------------
+    # Live Logging & Pathway Diagnostic Endpoints
+    # -------------------------------------------------------------
+    @app.route("/v1/logs", methods=["GET"])
+    def get_live_logs():
+        """Retrieve recent structured logs for GUI live stream and terminal sync."""
+        limit = min(500, max(1, int(request.args.get("limit", 100))))
+        since_id = int(request.args.get("since_id", 0))
+        component = request.args.get("component")
+        records = logger.get_logs(limit=limit, since_id=since_id, component=component)
+        return jsonify({
+            "count": len(records),
+            "since_id": since_id,
+            "logs": records,
+        }), 200
+
+    @app.route("/v1/logs", methods=["DELETE"])
+    def clear_live_logs():
+        """Clear memory log ring buffer."""
+        logger.clear_logs()
+        logger.info("LOGS", "Log buffer cleared by operator.")
+        return jsonify({"status": "cleared"}), 200
+
+    @app.route("/v1/test/pathway", methods=["GET", "POST"])
+    def test_live_pathway():
+        """Live diagnostic test executing full cycle: App > Blast > Route > Supabase > Blast > App."""
+        t_start = time.perf_counter()
+        test_path = "/auth/v1/health"
+        logger.pathway("[PATHWAY_TEST_START] Initiating full gateway diagnostic verification...")
+
+        # 1. Inbound Security Verification
+        logger.pathway("[STEP 1/5] Executing inbound security verification on test probe...")
+        sec_ok, sec_code, sec_details = sec_checker.verify_inbound_request(
+            method="GET",
+            path=test_path,
+            headers={"User-Agent": "Blast-Pathway-Probe/1.0"},
+        )
+        if not sec_ok:
+            logger.pathway(f"[STEP 1/5] FAILED: Inbound security rejected: {sec_code}")
+            return jsonify({"status": "FAILED", "step": 1, "error": sec_code, "details": sec_details}), 400
+        logger.pathway("[STEP 1/5] PASSED: Inbound syntax, depth, and safety verified.")
+
+        # 2. Smart Mesh Route Evaluation
+        logger.pathway("[STEP 2/5] Evaluating Smart Mesh Route selection...")
+        route_decision = smart_mesh.select_fastest_route()
+        logger.pathway(
+            f"[STEP 2/5] PASSED: Selected route '{route_decision.target_node.url}' "
+            f"(Score: {route_decision.score:.2f}, Candidates: {route_decision.evaluated_nodes_count}, Local: {route_decision.is_local})"
+        )
+
+        # 3. Supabase Upstream Dispatch
+        logger.pathway(f"[STEP 3/5] Querying upstream Supabase instance ({cfg.SUPABASE_URL}{test_path})...")
+        sb_status, sb_headers, sb_body = supabase_client.execute(
+            method="GET",
+            path=test_path,
+        )
+        logger.pathway(f"[STEP 3/5] PASSED: Supabase responded HTTP {sb_status} ({len(sb_body)} bytes).")
+
+        # 4. Outbound Response Sanitization
+        logger.pathway("[STEP 4/5] Running outbound response verification and sanitizing database leaks...")
+        clean_status, clean_headers, clean_body = sec_checker.verify_and_sanitize_response(
+            status_code=sb_status,
+            response_headers=sb_headers,
+            response_body=sb_body,
+        )
+        logger.pathway(f"[STEP 4/5] PASSED: Outbound sanitization complete. Status: {clean_status}")
+
+        # 5. Delivery
+        total_ms = (time.perf_counter() - t_start) * 1000.0
+        logger.pathway(
+            f"[STEP 5/5] PATHWAY COMPLETE in {total_ms:.1f}ms: "
+            f"App > Blast Ingress > Fastest Route ({route_decision.target_node.url}) > Supabase > Blast Egress > App"
+        )
+
+        parsed_body = None
+        try:
+            parsed_body = json.loads(clean_body)
+        except Exception:
+            parsed_body = clean_body
+
+        return jsonify({
+            "status": "SUCCESS",
+            "cycle": "App > Blast Ingress > Fastest Route > Supabase > Blast Egress > App",
+            "duration_ms": round(total_ms, 2),
+            "route_winner": route_decision.target_node.url,
+            "route_score": round(route_decision.score, 2),
+            "route_is_local": route_decision.is_local,
+            "supabase_status": clean_status,
+            "supabase_response": parsed_body,
+        }), 200
+
+    # -------------------------------------------------------------
     # Cluster Endpoints (Interconnected Render instances)
     # -------------------------------------------------------------
     @app.route("/v1/cluster/nodes", methods=["GET"])
@@ -231,6 +323,7 @@ def create_app(
         clean_path = f"/{target_path.lstrip('/')}"
         sanitized_headers = firewall.sanitize_headers(dict(request.headers))
         body = request.get_data(as_text=True) if request.data else None
+        logger.pathway(f"[QUEUE_INGRESS] {method} {clean_path} from {client_id} (Priority: {priority})")
 
         # 1. Execute Deep Security Checker on Inbound Request
         is_valid, err_code, err_details = sec_checker.verify_inbound_request(
@@ -242,17 +335,21 @@ def create_app(
         )
         if not is_valid:
             logger.security(f"Rejected bad queued request: {err_code} - {err_details}")
+            logger.pathway(f"[QUEUE_SEC_FAIL] Rejected {method} {clean_path}: {err_code}")
             return jsonify({
                 "error": "Bad Request - Security Verification Failed",
                 "code": err_code,
                 "details": err_details,
             }), 400
 
+        logger.pathway(f"[QUEUE_SEC_PASS] Security verified for {method} {clean_path}")
+
         # 2. Smart Mesh Dynamic Fastest Route Selection (if mesh enabled and first hop)
         if cfg.MESH_ROUTING_ENABLED and hop_count == 0:
             stats = queue_manager.get_stats()
             smart_mesh.update_local_queue_depth(stats.get("pending", 0) + stats.get("processing", 0))
             route_decision = smart_mesh.select_fastest_route(hop_count=hop_count)
+            logger.pathway(f"[QUEUE_ROUTE] Winner: {route_decision.target_node.url} (Score: {route_decision.score:.2f}, Local: {route_decision.is_local})")
 
             if not route_decision.is_local:
                 logger.info(
@@ -351,6 +448,7 @@ def create_app(
         clean_path = f"/{target_path.lstrip('/')}"
         body = request.get_data(as_text=True) if request.data else None
         hop_count = int(request.headers.get("X-Blast-Hop-Count", "0"))
+        logger.pathway(f"[PROXY_INGRESS] {request.method} {clean_path} (Hop: {hop_count})")
 
         # 1. Inbound Security Verification
         is_valid, err_code, err_details = sec_checker.verify_inbound_request(
@@ -362,15 +460,19 @@ def create_app(
         )
         if not is_valid:
             logger.security(f"Rejected bad proxy request: {err_code} - {err_details}")
+            logger.pathway(f"[PROXY_SEC_FAIL] Rejected {request.method} {clean_path}: {err_code}")
             return jsonify({
                 "error": "Bad Request - Security Verification Failed",
                 "code": err_code,
                 "details": err_details,
             }), 400
 
+        logger.pathway(f"[PROXY_SEC_PASS] Security verified for {request.method} {clean_path}")
+
         # 2. Smart Mesh Dynamic Routing for Proxy (if mesh enabled and first hop)
         if cfg.MESH_ROUTING_ENABLED and hop_count == 0:
             route_decision = smart_mesh.select_fastest_route(hop_count=hop_count)
+            logger.pathway(f"[PROXY_ROUTE] Winner: {route_decision.target_node.url} (Score: {route_decision.score:.2f}, Local: {route_decision.is_local})")
             if not route_decision.is_local:
                 logger.info(
                     "MESH",
@@ -392,6 +494,7 @@ def create_app(
                     )
                     flask_resp.headers["X-Blast-Routed-Via"] = route_decision.target_node.url
                     flask_resp.headers["X-Blast-Route-Score"] = str(round(route_decision.score, 2))
+                    logger.pathway(f"[PROXY_EGRESS] Delivered via peer {route_decision.target_node.url} -> HTTP {f_status}")
                     return flask_resp
                 except Exception as exc:
                     logger.warn("MESH", f"Peer proxy failed ({exc}), falling back to local proxy execution.")
@@ -422,6 +525,7 @@ def create_app(
                 flask_resp.headers[k] = v
 
         flask_resp.headers["X-Blast-Routed-Via"] = "local"
+        logger.pathway(f"[PROXY_EGRESS] Delivered {request.method} {clean_path} -> HTTP {clean_status}")
         return flask_resp
 
     return app

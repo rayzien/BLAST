@@ -296,6 +296,30 @@ class TestMeshServerEndpoints(unittest.TestCase):
         self.assertEqual(data["status"], "queued")
         self.assertIn("job_", data["job_id"])
 
+    def test_get_and_clear_logs(self):
+        # Fetch logs
+        resp = self.client.get("/v1/logs?limit=50")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertIn("logs", data)
+        self.assertIn("count", data)
+
+        # Clear logs
+        resp_del = self.client.delete("/v1/logs")
+        self.assertEqual(resp_del.status_code, 200)
+        self.assertEqual(resp_del.get_json()["status"], "cleared")
+
+    @patch("supabase.client.SupabaseClient.execute")
+    def test_pathway_diagnostic_endpoint(self, mock_sb_execute):
+        mock_sb_execute.return_value = (200, {"content-type": "application/json"}, '{"version": "1.0.0", "status": "ok"}')
+        resp = self.client.post("/v1/test/pathway")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertEqual(data["status"], "SUCCESS")
+        self.assertIn("cycle", data)
+        self.assertIn("duration_ms", data)
+        self.assertEqual(data["supabase_status"], 200)
+
 
 if __name__ == "__main__":
     unittest.main()
