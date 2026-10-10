@@ -1,0 +1,14 @@
+{
+  "supabase_url": "https://ylzpjtzeetnvypvikiqa.supabase.co",
+  "supabase_anon_key": "sb_publishable_mvS1x5C11_f5uIC9mpGukA_7vsP1jDQ",
+  "supabase_service_role_key": "",
+  "blast_api_key_1": "blast-secret-key-1",
+  "blast_api_key_2": "blast-dev-key",
+  "blast_cluster_secret": "blast-cluster-mesh-secret-key",
+  "blast_host": "0.0.0.0",
+  "blast_port": 8080,
+  "max_workers": 4,
+  "rate_limit_rps": 20.0,
+  "rate_limit_burst": 50,
+  "mesh_routing_enabled": true
+}

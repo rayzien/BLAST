@@ -17,3 +17,7 @@ venv/
 
 # Docker and local storage
 redis_data/
+
+# IDE and build artifacts
+.vscode/
+*.deb

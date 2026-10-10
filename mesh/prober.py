@@ -49,15 +49,26 @@ class MeshProber:
                 node.is_healthy = True
                 node.last_probe_time = time.time()
 
-                # 2. Probe Queue Backlog
+                # Read queue_depth directly from /health response (zero extra round-trips)
+                found_depth = False
                 try:
-                    stats_url = f"{node.url}/v1/queue/stats"
-                    stats_resp = requests.get(stats_url, headers=headers, timeout=2.0)
-                    if stats_resp.status_code == 200:
-                        s_data = stats_resp.json()
-                        node.queue_depth = int(s_data.get("pending", 0)) + int(s_data.get("processing", 0))
+                    h_data = resp.json()
+                    if "queue_depth" in h_data:
+                        node.queue_depth = int(h_data["queue_depth"])
+                        found_depth = True
                 except Exception:
                     pass
+
+                # Fallback to /v1/queue/stats if queue_depth was not present
+                if not found_depth:
+                    try:
+                        stats_url = f"{node.url}/v1/queue/stats"
+                        stats_resp = requests.get(stats_url, headers=headers, timeout=2.0)
+                        if stats_resp.status_code == 200:
+                            s_data = stats_resp.json()
+                            node.queue_depth = int(s_data.get("pending", 0)) + int(s_data.get("processing", 0))
+                    except Exception:
+                        pass
 
                 return True
             else:

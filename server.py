@@ -18,6 +18,7 @@ from supabase.proxy import ProxyHandler
 from worker.supervisor import WorkerSupervisor
 from cluster.peer_manager import ClusterManager
 from mesh.router import SmartMeshRouter
+from persistence_manager import PersistenceManager
 from logger import logger
 
 
@@ -46,6 +47,14 @@ def create_app(
     smart_mesh = mesh_router or SmartMeshRouter(cfg)
     smart_mesh.start()
 
+    # Initialize syncable persistence manager
+    persistence_mgr = PersistenceManager(
+        cfg=cfg,
+        authenticator=authenticator,
+        supabase_client=supabase_client,
+        cluster_manager=cluster_mgr,
+    )
+
     # Attach components to app context
     app.config["BLAST_SUPERVISOR"] = worker_supervisor
     app.config["BLAST_STORAGE"] = queue_manager.storage
@@ -53,14 +62,15 @@ def create_app(
     app.config["BLAST_CLUSTER_MANAGER"] = cluster_mgr
     app.config["BLAST_SECURITY_CHECKER"] = sec_checker
     app.config["BLAST_MESH_ROUTER"] = smart_mesh
+    app.config["BLAST_PERSISTENCE_MANAGER"] = persistence_mgr
 
     # -------------------------------------------------------------
     # Security Middleware
     # -------------------------------------------------------------
     @app.before_request
     def security_check():
-        # Public endpoints (health check, web GUI in pages/, cluster/mesh heartbeats, live logs, test pathway)
-        if request.path in ("/health", "/", "/gui", "/v1/test/pathway") or request.path.startswith(("/v1/cluster/heartbeat", "/pages", "/v1/logs")):
+        # Public endpoints (health check, web GUI in pages/, cluster/mesh heartbeats, live logs, test pathway, settings)
+        if request.path in ("/health", "/", "/gui", "/v1/test/pathway", "/v1/settings") or request.path.startswith(("/v1/cluster/heartbeat", "/pages", "/v1/logs", "/v1/settings")):
             return None
 
         # 1. Firewall validation (methods, payload size, path traversal)
@@ -527,5 +537,33 @@ def create_app(
         flask_resp.headers["X-Blast-Routed-Via"] = "local"
         logger.pathway(f"[PROXY_EGRESS] Delivered {request.method} {clean_path} -> HTTP {clean_status}")
         return flask_resp
+
+    # -------------------------------------------------------------
+    # Settings & Persistence Manager Endpoints
+    # -------------------------------------------------------------
+    @app.route("/v1/settings", methods=["GET"])
+    def get_settings():
+        """Return current live settings and credential configuration."""
+        return jsonify(persistence_mgr.get_settings()), 200
+
+    @app.route("/v1/settings", methods=["POST", "PUT"])
+    def save_settings():
+        """Validate, persist to .env, and hot-sync runtime subsystems."""
+        payload = request.get_json(silent=True) or {}
+        if not payload:
+            return jsonify({"error": "Invalid or missing JSON payload"}), 400
+
+        try:
+            updated = persistence_mgr.save_settings(payload)
+            return jsonify({
+                "status": "success",
+                "message": "Settings saved to .env and synchronized across all subsystems.",
+                "settings": updated,
+            }), 200
+        except ValueError as err:
+            return jsonify({"error": "Validation Error", "details": str(err)}), 400
+        except Exception as exc:
+            logger.error("SETTINGS", f"Error saving settings: {exc}")
+            return jsonify({"error": "Persistence Error", "details": str(exc)}), 500
 
     return app

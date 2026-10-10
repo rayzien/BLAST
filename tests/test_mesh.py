@@ -249,6 +249,7 @@ class TestMeshServerEndpoints(unittest.TestCase):
         peer_node.ewma_latency_ms = 5.0
         peer_node.queue_depth = 0
         peer_node.is_healthy = True
+        peer_node.error_count = 0
 
         # Local node with high load
         self.mesh_router.local_node.ewma_latency_ms = 80.0

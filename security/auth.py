@@ -13,6 +13,10 @@ class Authenticator:
         # Store valid keys in a set for O(1) lookup
         self.valid_keys = set(cfg.API_KEYS)
 
+    def update_keys(self, new_keys):
+        """Hot-reload valid keys dynamically."""
+        self.valid_keys = set(new_keys)
+
     def extract_api_key(self, headers: dict, query_params: Optional[dict] = None) -> Optional[str]:
         """Extract API key from headers or query parameters."""
         # Check standard custom header

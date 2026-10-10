@@ -19,6 +19,11 @@ class SupabaseClient:
             limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
         )
 
+    def reload_config(self):
+        """Reload base_url and timeout when config changes dynamically."""
+        self.base_url = self.cfg.SUPABASE_URL.rstrip("/")
+        self.timeout = self.cfg.SUPABASE_TIMEOUT_SECONDS
+
     def prepare_headers(self, incoming_headers: Dict[str, str]) -> Dict[str, str]:
         """Inject required Supabase keys while preserving caller JWT tokens."""
         out_headers = dict(incoming_headers)

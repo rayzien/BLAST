@@ -73,11 +73,12 @@ blast/
 |   `-- proxy.py                # Synchronous pass-through proxy
 |-- sdk/
 |   `-- blast_client.py         # Python SDK for client apps
-|-- examples/
-|   `-- app_demo.py             # Sample client integration script
+|-- persistence_manager.py      # Atomic settings.json & .env syncable persistence engine
+|-- settings.json               # Persistent configuration for private repositories
 `-- tests/
     |-- test_blast.py           # Core gateway, security, and queue test suite
-    `-- test_mesh.py            # Mesh routing, loop prevention, and failover test suite
+    |-- test_mesh.py            # Mesh routing, loop prevention, and failover test suite
+    `-- test_settings.py        # Settings API and crash resilience persistence test suite
 ```
 
 ---

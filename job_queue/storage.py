@@ -14,6 +14,8 @@ class SQLiteQueueStorage:
     def __init__(self, db_path: str = "blast_queue.db"):
         self.db_path = db_path
         self._local = threading.local()
+        self._all_connections = set()
+        self._lock = threading.Lock()
         self.init_db()
 
     def _get_connection(self) -> sqlite3.Connection:
@@ -31,6 +33,8 @@ class SQLiteQueueStorage:
             conn.execute("PRAGMA synchronous=NORMAL;")
             conn.execute("PRAGMA busy_timeout=5000;")
             self._local.conn = conn
+            with self._lock:
+                self._all_connections.add(conn)
         return self._local.conn
 
     def init_db(self):
@@ -299,10 +303,13 @@ class SQLiteQueueStorage:
         }
 
     def close(self):
-        """Close thread-local SQLite connection if active."""
-        if hasattr(self._local, "conn") and self._local.conn is not None:
-            try:
-                self._local.conn.close()
-            except Exception:
-                pass
+        """Close all opened SQLite connections across all threads."""
+        with self._lock:
+            for conn in list(self._all_connections):
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+            self._all_connections.clear()
+        if hasattr(self._local, "conn"):
             self._local.conn = None

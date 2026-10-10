@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BLAST GATEWAY | System Dashboard &amp; Control Console</title>
+    <title>BLAST GATEWAY | Dashboard & Controls</title>
     
-    <!-- 12 Google and Cyberpunk Fonts -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Chakra+Petch:wght@500;600;700&family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Montserrat:wght@500;600;700&family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@600;700&family=Russo+One&family=Share+Tech+Mono&family=Space+Grotesk:wght@500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        /* 12 Dedicated Font Styles */
+        /* Font Styles */
         .font-audiowide    { font-family: 'Audiowide', cursive; }
         .font-orbitron     { font-family: 'Orbitron', sans-serif; }
         .font-rajdhani     { font-family: 'Rajdhani', sans-serif; }
@@ -40,7 +40,6 @@
             --emerald-accent: #10b981;
         }
 
-        /* Native Clean Cursor (Custom Cursor Removed) */
         html, body {
             background-color: var(--bg-dark);
             color: #e2e8f0;
@@ -51,7 +50,7 @@
             overflow-x: hidden;
         }
 
-        /* Subtle Cyber Grid */
+        /* Subtle Grid Background */
         .cyber-grid {
             background-image: 
                 linear-gradient(to right, rgba(0, 255, 204, 0.025) 1px, transparent 1px),
@@ -75,7 +74,7 @@
 </head>
 <body class="cyber-grid min-h-screen flex flex-col">
 
-    <!-- Top Command & Connection Header -->
+    <!-- Header -->
     <header class="border-b border-slate-800 bg-[#090d15]/95 backdrop-blur sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
             
@@ -90,21 +89,25 @@
                         <span class="font-fira text-xs px-2 py-0.5 bg-cyan-950/80 text-cyan-300 border border-cyan-500/30 rounded">GATEWAY v1.0</span>
                     </div>
                     <span class="font-rajdhani text-xs text-slate-400 font-semibold tracking-wider uppercase block">
-                        ZERO-TRUST SECURITY &amp; BUFFER QUEUE FOR SUPABASE
+                        SECURE QUEUE &amp; PROXY FOR SUPABASE
                     </span>
                 </div>
             </div>
 
-            <!-- CLI Auto-Connection Controls -->
+            <!-- Connection Controls -->
             <div class="flex flex-wrap items-center gap-2 bg-slate-900/90 border border-slate-800 p-1.5 rounded-lg">
                 <div class="flex items-center gap-2 px-2.5">
                     <span id="conn-dot" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
                     <span id="conn-status" class="font-sharetech text-xs text-slate-400">CONNECTING...</span>
                 </div>
                 <input type="text" id="cfg-host" value="" placeholder="http://localhost:8080" class="font-fira text-xs bg-slate-950 border border-slate-700 text-cyan-300 px-2.5 py-1.5 rounded w-48 focus:outline-none focus:border-cyan-400">
-                <input type="password" id="cfg-key" value="blast-secret-key-1" placeholder="API Key" class="font-fira text-xs bg-slate-950 border border-slate-700 text-slate-200 px-2.5 py-1.5 rounded w-36 focus:outline-none focus:border-cyan-400">
+                <input type="text" id="cfg-key" value="blast-secret-key-1" placeholder="API Key" class="font-fira text-xs bg-slate-950 border border-slate-700 text-cyan-300 px-2.5 py-1.5 rounded w-36 focus:outline-none focus:border-cyan-400">
                 <button onclick="reconnectGateway()" class="font-chakra text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 px-3 py-1.5 rounded transition font-semibold">
-                    SYNC CLI
+                    CONNECT
+                </button>
+                <button onclick="showTab('settings')" title="Open Settings & Credentials" class="font-chakra text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-3 py-1.5 rounded transition font-semibold flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    SETTINGS
                 </button>
             </div>
         </div>
@@ -112,19 +115,23 @@
         <!-- Navigation Tabs -->
         <div class="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto border-t border-slate-800/80">
             <button onclick="showTab('dashboard')" id="tab-dashboard" class="nav-tab active font-montserrat text-xs tracking-wider py-2.5 px-4 font-semibold uppercase text-slate-400 hover:text-white transition">
-                [01. TELEMETRY DASHBOARD]
+                Dashboard
             </button>
             <button onclick="showTab('console')" id="tab-console" class="nav-tab font-montserrat text-xs tracking-wider py-2.5 px-4 font-semibold uppercase text-slate-400 hover:text-white transition">
-                [02. REQUEST DISPATCHER]
+                Send Requests
             </button>
             <button onclick="showTab('security')" id="tab-security" class="nav-tab font-montserrat text-xs tracking-wider py-2.5 px-4 font-semibold uppercase text-slate-400 hover:text-white transition">
-                [03. SECURITY LAB]
+                Security Tests
             </button>
             <button onclick="showTab('dlq')" id="tab-dlq" class="nav-tab font-montserrat text-xs tracking-wider py-2.5 px-4 font-semibold uppercase text-slate-400 hover:text-white transition">
-                [04. DEAD LETTER QUEUE]
+                Failed Jobs
             </button>
             <button onclick="showTab('cluster')" id="tab-cluster" class="nav-tab font-montserrat text-xs tracking-wider py-2.5 px-4 font-semibold uppercase text-slate-400 hover:text-white transition">
-                [05. CLUSTER NODES]
+                Server Network
+            </button>
+            <button onclick="showTab('settings')" id="tab-settings" class="nav-tab font-montserrat text-xs tracking-wider py-2.5 px-4 font-semibold uppercase text-amber-400 hover:text-amber-300 transition flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                SETTINGS &amp; CREDENTIALS
             </button>
         </div>
     </header>
@@ -133,109 +140,109 @@
     <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
 
         <!-- ============================================================= -->
-        <!-- VIEW 1: TELEMETRY DASHBOARD -->
+        <!-- VIEW 1: DASHBOARD -->
         <!-- ============================================================= -->
         <div id="view-dashboard" class="space-y-6">
             
-            <!-- Realtime Metrics Grid -->
+            <!-- Stats Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 
                 <!-- Pending Queue -->
                 <div class="bg-[#0d121c] border border-amber-500/30 rounded-xl p-4">
                     <div class="flex justify-between items-start">
-                        <span class="font-space text-xs font-semibold text-slate-400 uppercase tracking-wider">PENDING QUEUE</span>
-                        <span class="font-sharetech text-[11px] text-amber-400 bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-500/30">[BUFFERED]</span>
+                        <span class="font-space text-xs font-semibold text-slate-400 uppercase tracking-wider">Waiting</span>
+                        <span class="font-sharetech text-[11px] text-amber-400 bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-500/30">QUEUED</span>
                     </div>
                     <div class="font-russo text-4xl text-amber-400 mt-2" id="val-pending">0</div>
-                    <p class="font-inter text-xs text-slate-500 mt-1">Absorbing traffic spikes before Supabase</p>
+                    <p class="font-inter text-xs text-slate-500 mt-1">Requests waiting to be processed</p>
                 </div>
 
                 <!-- Active Processing -->
                 <div class="bg-[#0d121c] border border-cyan-500/30 rounded-xl p-4">
                     <div class="flex justify-between items-start">
-                        <span class="font-space text-xs font-semibold text-slate-400 uppercase tracking-wider">PROCESSING</span>
-                        <span class="font-sharetech text-[11px] text-cyan-400 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-500/30">[IN FLIGHT]</span>
+                        <span class="font-space text-xs font-semibold text-slate-400 uppercase tracking-wider">Processing</span>
+                        <span class="font-sharetech text-[11px] text-cyan-400 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-500/30">ACTIVE</span>
                     </div>
                     <div class="font-russo text-4xl text-cyan-300 mt-2" id="val-processing">0</div>
-                    <p class="font-inter text-xs text-slate-500 mt-1">Concurrently executing worker threads</p>
+                    <p class="font-inter text-xs text-slate-500 mt-1">Currently being sent to Supabase</p>
                 </div>
 
-                <!-- Successfully Resolved -->
+                <!-- Completed -->
                 <div class="bg-[#0d121c] border border-emerald-500/30 rounded-xl p-4">
                     <div class="flex justify-between items-start">
-                        <span class="font-space text-xs font-semibold text-slate-400 uppercase tracking-wider">RESOLVED</span>
-                        <span class="font-sharetech text-[11px] text-emerald-400 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-500/30">[COMPLETED]</span>
+                        <span class="font-space text-xs font-semibold text-slate-400 uppercase tracking-wider">Completed</span>
+                        <span class="font-sharetech text-[11px] text-emerald-400 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-500/30">DONE</span>
                     </div>
                     <div class="font-russo text-4xl text-emerald-400 mt-2" id="val-completed">0</div>
-                    <p class="font-inter text-xs text-slate-500 mt-1">Written to Supabase and verified safe</p>
+                    <p class="font-inter text-xs text-slate-500 mt-1">Successfully delivered to Supabase</p>
                 </div>
 
-                <!-- Dead Letter Queue (DLQ) -->
+                <!-- Failed -->
                 <div class="bg-[#0d121c] border border-rose-500/30 rounded-xl p-4">
                     <div class="flex justify-between items-start">
-                        <span class="font-space text-xs font-semibold text-slate-400 uppercase tracking-wider">DEAD LETTER</span>
-                        <span class="font-sharetech text-[11px] text-rose-400 bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-500/30">[DLQ]</span>
+                        <span class="font-space text-xs font-semibold text-slate-400 uppercase tracking-wider">Failed</span>
+                        <span class="font-sharetech text-[11px] text-rose-400 bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-500/30">ERRORS</span>
                     </div>
                     <div class="font-russo text-4xl text-rose-400 mt-2" id="val-dlq">0</div>
-                    <p class="font-inter text-xs text-slate-500 mt-1">Retries exhausted or fatal exceptions</p>
+                    <p class="font-inter text-xs text-slate-500 mt-1">Requests that failed after all retries</p>
                 </div>
             </div>
 
             <!-- Gateway Health & Info Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                <!-- Telemetry Readout -->
+                <!-- Server Info -->
                 <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5 space-y-3">
                     <h3 class="font-orbitron text-sm font-bold text-slate-200 tracking-wider uppercase border-b border-slate-800 pb-2">
-                        [GATEWAY NODE TELEMETRY]
+                        Server Info
                     </h3>
                     <div class="space-y-2.5 font-jetbrains text-xs">
                         <div class="flex justify-between py-1 border-b border-slate-900">
-                            <span class="text-slate-400">Node Identifier:</span>
+                            <span class="text-slate-400">Server ID:</span>
                             <span class="text-cyan-300 font-semibold" id="node-id-val">--</span>
                         </div>
                         <div class="flex justify-between py-1 border-b border-slate-900">
-                            <span class="text-slate-400">Queue Storage Engine:</span>
+                            <span class="text-slate-400">Storage:</span>
                             <span class="text-slate-200" id="storage-engine-val">SQLite WAL-Mode</span>
                         </div>
                         <div class="flex justify-between py-1 border-b border-slate-900">
-                            <span class="text-slate-400">Worker Supervisors:</span>
+                            <span class="text-slate-400">Workers:</span>
                             <span class="text-emerald-400" id="workers-val">ONLINE</span>
                         </div>
                         <div class="flex justify-between py-1 border-b border-slate-900">
-                            <span class="text-slate-400">Security Checker:</span>
-                            <span class="text-cyan-300">ACTIVE &amp; ENFORCING</span>
+                            <span class="text-slate-400">Security:</span>
+                            <span class="text-cyan-300">ACTIVE</span>
                         </div>
                         <div class="flex justify-between py-1 border-b border-slate-900">
-                            <span class="text-slate-400">Target Supabase:</span>
+                            <span class="text-slate-400">Supabase:</span>
                             <span class="text-emerald-400" id="supa-state-val">CONFIGURED</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Architectural Flow Visualization -->
+                <!-- How It Works -->
                 <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5 lg:col-span-2 space-y-4">
                     <h3 class="font-orbitron text-sm font-bold text-slate-200 tracking-wider uppercase border-b border-slate-800 pb-2">
-                        [ZERO-TRUST TRAFFIC PIPELINE]
+                        How It Works
                     </h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center my-3">
                         <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg">
-                            <span class="font-rajdhani text-sm font-bold text-cyan-400 uppercase tracking-wider block">01. CLIENT APP</span>
-                            <p class="font-inter text-xs text-slate-400 mt-1">Dispatches writes with API Key and Idempotency token</p>
+                            <span class="font-rajdhani text-sm font-bold text-cyan-400 uppercase tracking-wider block">1. Your App</span>
+                            <p class="font-inter text-xs text-slate-400 mt-1">Sends requests with your API key</p>
                         </div>
                         <div class="bg-cyan-950/20 border border-cyan-500/40 p-4 rounded-lg">
-                            <span class="font-rajdhani text-sm font-bold text-white uppercase tracking-wider block">02. BLAST GATEWAY</span>
-                            <p class="font-inter text-xs text-slate-300 mt-1">Verifies security, buffers in durable queue, dispatches with backoff</p>
+                            <span class="font-rajdhani text-sm font-bold text-white uppercase tracking-wider block">2. Blast Gateway</span>
+                            <p class="font-inter text-xs text-slate-300 mt-1">Checks security, queues requests, and retries on failure</p>
                         </div>
                         <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg">
-                            <span class="font-rajdhani text-sm font-bold text-emerald-400 uppercase tracking-wider block">03. SUPABASE</span>
-                            <p class="font-inter text-xs text-slate-400 mt-1">Protected from connection saturation and rate limits</p>
+                            <span class="font-rajdhani text-sm font-bold text-emerald-400 uppercase tracking-wider block">3. Supabase</span>
+                            <p class="font-inter text-xs text-slate-400 mt-1">Receives requests safely, protected from overload</p>
                         </div>
                     </div>
 
                     <div class="p-3 bg-slate-950 border border-slate-800/80 rounded font-sharetech text-xs text-slate-400">
-                        [ACTIVE PROTOCOL] Inbound requests to <code class="text-cyan-300">/v1/queue/*</code> are acknowledged with 202 Accepted. Requests to <code class="text-amber-300">/v1/proxy/*</code> execute synchronously through the security checker.
+                        Requests to <code class="text-cyan-300">/v1/queue/*</code> are queued and processed in the background (returns 202). Requests to <code class="text-amber-300">/v1/proxy/*</code> are forwarded immediately and wait for a response.
                     </div>
                 </div>
 
@@ -243,26 +250,26 @@
         </div>
 
         <!-- ============================================================= -->
-        <!-- VIEW 2: REQUEST DISPATCH CONSOLE -->
+        <!-- VIEW 2: SEND REQUESTS -->
         <!-- ============================================================= -->
         <div id="view-console" class="hidden space-y-6">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
-                <!-- Request Configurator -->
+                <!-- Request Builder -->
                 <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5 space-y-4">
                     <h3 class="font-orbitron text-sm font-bold text-slate-200 tracking-wider uppercase border-b border-slate-800 pb-2">
-                        [REQUEST BUILDER]
+                        Build a Request
                     </h3>
 
                     <!-- Route Mode Selection -->
                     <div>
-                        <label class="font-space text-xs font-semibold text-slate-400 block mb-1.5 uppercase">Routing Strategy</label>
+                        <label class="font-space text-xs font-semibold text-slate-400 block mb-1.5 uppercase">Send Mode</label>
                         <div class="grid grid-cols-2 gap-2">
                             <button type="button" onclick="setMode('queue')" id="mode-queue-btn" class="py-2 px-3 border border-cyan-400 bg-cyan-950/40 text-cyan-300 font-chakra text-xs font-bold rounded text-center transition">
-                                ASYNC QUEUE (/v1/queue/*)
+                                Queue (Background)
                             </button>
                             <button type="button" onclick="setMode('proxy')" id="mode-proxy-btn" class="py-2 px-3 border border-slate-700 bg-slate-900 text-slate-400 font-chakra text-xs font-bold rounded text-center transition">
-                                SYNC PROXY (/v1/proxy/*)
+                                Proxy (Instant)
                             </button>
                         </div>
                     </div>
@@ -270,7 +277,7 @@
                     <!-- Method & Target Path -->
                     <div class="grid grid-cols-3 gap-2">
                         <div>
-                            <label class="font-space text-xs font-semibold text-slate-400 block mb-1.5 uppercase">HTTP Verb</label>
+                            <label class="font-space text-xs font-semibold text-slate-400 block mb-1.5 uppercase">Method</label>
                             <select id="req-method" class="w-full font-fira text-xs bg-slate-950 border border-slate-700 text-white p-2.5 rounded focus:outline-none focus:border-cyan-400">
                                 <option value="POST">POST</option>
                                 <option value="GET">GET</option>
@@ -280,7 +287,7 @@
                             </select>
                         </div>
                         <div class="col-span-2">
-                            <label class="font-space text-xs font-semibold text-slate-400 block mb-1.5 uppercase">Supabase Endpoint</label>
+                            <label class="font-space text-xs font-semibold text-slate-400 block mb-1.5 uppercase">Supabase Path</label>
                             <input type="text" id="req-path" value="/rest/v1/orders" class="w-full font-fira text-xs bg-slate-950 border border-slate-700 text-cyan-300 p-2.5 rounded focus:outline-none focus:border-cyan-400">
                         </div>
                     </div>
@@ -288,11 +295,11 @@
                     <!-- Idempotency & Priority -->
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="font-space text-xs font-semibold text-slate-400 block mb-1.5 uppercase">Idempotency Key</label>
-                            <input type="text" id="req-idemp" value="" placeholder="auto-generated UUID" class="w-full font-fira text-xs bg-slate-950 border border-slate-700 text-slate-200 p-2.5 rounded focus:outline-none focus:border-cyan-400">
+                            <label class="font-space text-xs font-semibold text-slate-400 block mb-1.5 uppercase">Duplicate Prevention Key</label>
+                            <input type="text" id="req-idemp" value="" placeholder="auto-generated" class="w-full font-fira text-xs bg-slate-950 border border-slate-700 text-slate-200 p-2.5 rounded focus:outline-none focus:border-cyan-400">
                         </div>
                         <div>
-                            <label class="font-space text-xs font-semibold text-slate-400 block mb-1.5 uppercase">Queue Priority</label>
+                            <label class="font-space text-xs font-semibold text-slate-400 block mb-1.5 uppercase">Priority</label>
                             <select id="req-priority" class="w-full font-fira text-xs bg-slate-950 border border-slate-700 text-white p-2.5 rounded focus:outline-none focus:border-cyan-400">
                                 <option value="0">Normal (0)</option>
                                 <option value="1">High (1)</option>
@@ -310,30 +317,30 @@
                         <textarea id="req-body" rows="6" class="w-full font-jetbrains text-xs bg-slate-950 border border-slate-700 text-slate-200 p-3 rounded focus:outline-none focus:border-cyan-400">{"customer": "Atlas Tech", "amount": 420.00, "status": "pending"}</textarea>
                     </div>
 
-                    <!-- Dispatch Action -->
+                    <!-- Send Button -->
                     <button type="button" onclick="executeConsoleDispatch()" class="w-full py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-chakra text-sm font-bold tracking-wider uppercase rounded shadow-lg transition">
-                        TRANSMIT REQUEST THROUGH BLAST
+                        SEND REQUEST
                     </button>
                 </div>
 
-                <!-- Live Response Telemetry Panel -->
+                <!-- Response Panel -->
                 <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5 flex flex-col">
                     <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-3">
                         <h3 class="font-orbitron text-sm font-bold text-slate-200 tracking-wider uppercase">
-                            [EXECUTION FEEDBACK]
+                            Response
                         </h3>
-                        <span id="badge-status" class="font-fira text-xs px-2.5 py-1 bg-slate-800 text-slate-400 rounded">STANDBY</span>
+                        <span id="badge-status" class="font-fira text-xs px-2.5 py-1 bg-slate-800 text-slate-400 rounded">READY</span>
                     </div>
 
                     <div class="space-y-3 flex-1 flex flex-col">
                         <div class="grid grid-cols-2 gap-2 font-sharetech text-xs bg-slate-950 p-2.5 rounded border border-slate-800">
-                            <div><span class="text-slate-500">Latency:</span> <span id="telemetry-latency" class="text-cyan-300">-- ms</span></div>
-                            <div><span class="text-slate-500">Assigned Job ID:</span> <span id="telemetry-job-id" class="text-amber-300">--</span></div>
+                            <div><span class="text-slate-500">Response Time:</span> <span id="telemetry-latency" class="text-cyan-300">-- ms</span></div>
+                            <div><span class="text-slate-500">Job ID:</span> <span id="telemetry-job-id" class="text-amber-300">--</span></div>
                         </div>
 
                         <div class="flex-1 flex flex-col">
                             <label class="font-space text-xs font-semibold text-slate-400 block mb-1 uppercase">Response Body</label>
-                            <pre id="telemetry-output" class="font-jetbrains text-xs bg-slate-950 p-3 rounded border border-slate-800 text-slate-300 overflow-auto flex-1 min-h-[280px] whitespace-pre-wrap">// Output will be rendered here upon dispatch...</pre>
+                            <pre id="telemetry-output" class="font-jetbrains text-xs bg-slate-950 p-3 rounded border border-slate-800 text-slate-300 overflow-auto flex-1 min-h-[280px] whitespace-pre-wrap">// Send a request to see the response here...</pre>
                         </div>
                     </div>
                 </div>
@@ -342,16 +349,16 @@
         </div>
 
         <!-- ============================================================= -->
-        <!-- VIEW 3: SECURITY CHECKER LAB -->
+        <!-- VIEW 3: SECURITY TESTS -->
         <!-- ============================================================= -->
         <div id="view-security" class="hidden space-y-6">
             <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5">
                 <div class="border-b border-slate-800 pb-3 mb-4">
                     <h3 class="font-syne text-lg font-bold text-white tracking-wide uppercase">
-                        ZERO-TRUST SECURITY CHECKER LAB
+                        Security Test Lab
                     </h3>
                     <p class="font-inter text-xs text-slate-400 mt-1">
-                        Live attack simulation lab testing Blast's multi-phase request verification and database error leak sanitizer.
+                        Test how Blast handles common attacks. Each button simulates a different type of malicious request to verify that Blast blocks it.
                     </p>
                 </div>
 
@@ -360,77 +367,77 @@
                     <!-- Attack 1 -->
                     <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg flex flex-col justify-between">
                         <div>
-                            <span class="font-chakra text-xs text-rose-400 font-bold uppercase">[TEST 01] SQL INJECTION</span>
-                            <p class="font-inter text-xs text-slate-400 mt-2">Injects SQL meta-characters and statements into PostgREST query filters.</p>
+                            <span class="font-chakra text-xs text-rose-400 font-bold uppercase">Test 1: SQL Injection</span>
+                            <p class="font-inter text-xs text-slate-400 mt-2">Tries to sneak SQL commands into query parameters to manipulate the database.</p>
                             <code class="font-fira text-[11px] text-slate-500 block mt-2 bg-slate-900 p-1.5 rounded break-all">?id=1; DROP TABLE users --</code>
                         </div>
                         <button onclick="executeSecuritySimulation('sqli')" class="mt-4 font-chakra text-xs py-2 px-3 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded transition font-semibold">
-                            TEST SQL INJECTION
+                            RUN TEST
                         </button>
                     </div>
 
                     <!-- Attack 2 -->
                     <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg flex flex-col justify-between">
                         <div>
-                            <span class="font-chakra text-xs text-rose-400 font-bold uppercase">[TEST 02] SCRIPT (XSS)</span>
-                            <p class="font-inter text-xs text-slate-400 mt-2">Injects executable JavaScript tags into JSON payload strings.</p>
+                            <span class="font-chakra text-xs text-rose-400 font-bold uppercase">Test 2: Script Injection (XSS)</span>
+                            <p class="font-inter text-xs text-slate-400 mt-2">Tries to inject JavaScript code inside a JSON payload.</p>
                             <code class="font-fira text-[11px] text-slate-500 block mt-2 bg-slate-900 p-1.5 rounded break-all">{"data": "&lt;script&gt;..."}</code>
                         </div>
                         <button onclick="executeSecuritySimulation('xss')" class="mt-4 font-chakra text-xs py-2 px-3 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded transition font-semibold">
-                            TEST XSS SCRIPT
+                            RUN TEST
                         </button>
                     </div>
 
                     <!-- Attack 3 -->
                     <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg flex flex-col justify-between">
                         <div>
-                            <span class="font-chakra text-xs text-rose-400 font-bold uppercase">[TEST 03] PATH TRAVERSAL</span>
-                            <p class="font-inter text-xs text-slate-400 mt-2">Attempts directory traversal or rogue unauthorized route execution.</p>
+                            <span class="font-chakra text-xs text-rose-400 font-bold uppercase">Test 3: Path Traversal</span>
+                            <p class="font-inter text-xs text-slate-400 mt-2">Tries to access files outside the allowed directories using ../ paths.</p>
                             <code class="font-fira text-[11px] text-slate-500 block mt-2 bg-slate-900 p-1.5 rounded break-all">/v1/proxy/../../etc/passwd</code>
                         </div>
                         <button onclick="executeSecuritySimulation('traversal')" class="mt-4 font-chakra text-xs py-2 px-3 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded transition font-semibold">
-                            TEST PATH TRAVERSAL
+                            RUN TEST
                         </button>
                     </div>
 
                     <!-- Attack 4 -->
                     <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg flex flex-col justify-between">
                         <div>
-                            <span class="font-chakra text-xs text-cyan-400 font-bold uppercase">[TEST 04] SAFE VERIFIED WRITE</span>
-                            <p class="font-inter text-xs text-slate-400 mt-2">Valid compliant request that passes all zero-trust security checks.</p>
+                            <span class="font-chakra text-xs text-cyan-400 font-bold uppercase">Test 4: Normal Request</span>
+                            <p class="font-inter text-xs text-slate-400 mt-2">A safe, valid request that should pass all security checks.</p>
                             <code class="font-fira text-[11px] text-slate-500 block mt-2 bg-slate-900 p-1.5 rounded break-all">POST /rest/v1/orders</code>
                         </div>
                         <button onclick="executeSecuritySimulation('valid')" class="mt-4 font-chakra text-xs py-2 px-3 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded transition font-semibold">
-                            TEST SAFE WRITE
+                            RUN TEST
                         </button>
                     </div>
 
                 </div>
 
-                <!-- Live Diagnostic Terminal -->
+                <!-- Security Log Output -->
                 <div class="mt-6">
-                    <label class="font-space text-xs font-semibold text-slate-400 block mb-1 uppercase">Security Checker Realtime Inspector</label>
-                    <pre id="security-log-terminal" class="font-sharetech text-xs bg-slate-950 p-4 rounded border border-slate-800 text-slate-300 h-64 overflow-auto whitespace-pre-wrap">[SECURITY CHECKER] System ready. Zero-trust enforcement active.</pre>
+                    <label class="font-space text-xs font-semibold text-slate-400 block mb-1 uppercase">Test Results</label>
+                    <pre id="security-log-terminal" class="font-sharetech text-xs bg-slate-950 p-4 rounded border border-slate-800 text-slate-300 h-64 overflow-auto whitespace-pre-wrap">[READY] Security test lab is ready. Click any test above to run it.</pre>
                 </div>
             </div>
         </div>
 
         <!-- ============================================================= -->
-        <!-- VIEW 4: DEAD LETTER QUEUE (DLQ) -->
+        <!-- VIEW 4: FAILED JOBS -->
         <!-- ============================================================= -->
         <div id="view-dlq" class="hidden space-y-6">
             <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
                     <div>
                         <h3 class="font-orbitron text-sm font-bold text-slate-200 tracking-wider uppercase">
-                            [DEAD LETTER QUEUE (DLQ) REPOSITORY]
+                            Failed Jobs
                         </h3>
                         <p class="font-inter text-xs text-slate-400 mt-1">
-                            Poison payloads or exhausted jobs stored with full diagnostics. Re-queue immediately.
+                            Requests that failed after all retry attempts. You can retry them manually from here.
                         </p>
                     </div>
                     <button onclick="reloadDlqList()" class="font-chakra text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded transition font-semibold">
-                        RELOAD DLQ
+                        REFRESH
                     </button>
                 </div>
 
@@ -440,14 +447,14 @@
                             <tr class="border-b border-slate-800 text-slate-400 uppercase font-space text-[11px]">
                                 <th class="py-2.5 px-3">Job ID</th>
                                 <th class="py-2.5 px-3">Error Reason</th>
-                                <th class="py-2.5 px-3">Timestamp</th>
+                                <th class="py-2.5 px-3">When</th>
                                 <th class="py-2.5 px-3 text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody id="dlq-table-entries" class="divide-y divide-slate-800/60">
                             <tr>
                                 <td colspan="4" class="py-6 text-center text-slate-500 font-inter">
-                                    No dead letter jobs found. All queues healthy.
+                                    No failed jobs. Everything is running smoothly.
                                 </td>
                             </tr>
                         </tbody>
@@ -457,53 +464,52 @@
         </div>
 
         <!-- ============================================================= -->
-        <!-- ============================================================= -->
-        <!-- VIEW 5: SMART MESH & FASTEST ROUTE TOPOLOGY -->
+        <!-- VIEW 5: SERVER NETWORK -->
         <!-- ============================================================= -->
         <div id="view-cluster" class="hidden space-y-6">
             <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5 space-y-6">
                 
-                <!-- Section Header & Active Fastest Route Banner -->
+                <!-- Section Header -->
                 <div class="border-b border-slate-800 pb-4">
                     <div class="flex flex-wrap justify-between items-start gap-4">
                         <div>
                             <h3 class="font-orbitron text-sm font-bold text-slate-200 tracking-wider uppercase">
-                                [SMART MESH: DYNAMIC FASTEST ROUTE SELECTION]
+                                Server Network
                             </h3>
                             <p class="font-inter text-xs text-slate-400 mt-1">
-                                App requests are automatically routed to the fastest, least-pressured Blast server link across the mesh.
+                                Requests are automatically sent to the fastest available Blast server. Add more servers to spread the load.
                             </p>
                         </div>
                         <div class="bg-cyan-950/40 border border-cyan-500/40 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                            <span class="font-space text-xs text-slate-400 uppercase font-semibold">Active Fastest Route:</span>
-                            <span id="fastest-route-badge" class="font-fira text-xs text-cyan-300 font-bold">CALCULATING...</span>
+                            <span class="font-space text-xs text-slate-400 uppercase font-semibold">Fastest Server:</span>
+                            <span id="fastest-route-badge" class="font-fira text-xs text-cyan-300 font-bold">CHECKING...</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Register New Blast Server Link Form -->
+                <!-- Add New Server Form -->
                 <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
                     <h4 class="font-chakra text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">
-                        [+ REGISTER NEW BLAST SERVER LINK]
+                        Add a Server
                     </h4>
                     <p class="font-inter text-xs text-slate-400 mb-3">
-                        Add an additional Blast server URL (e.g. Render, AWS, or local instance). Traffic will automatically balance to it when it is faster or less loaded.
+                        Add another Blast server URL (on Render, AWS, or running locally). Traffic will automatically balance to whichever server is faster.
                     </p>
                     <div class="flex flex-wrap gap-2">
                         <input type="text" id="new-node-url" placeholder="https://blast-node-2.onrender.com" class="font-fira text-xs bg-slate-900 border border-slate-700 text-cyan-300 px-3 py-2 rounded flex-1 min-w-[220px] focus:outline-none focus:border-cyan-400">
-                        <input type="text" id="new-node-name" placeholder="Node Alias (e.g. Render US)" class="font-fira text-xs bg-slate-900 border border-slate-700 text-slate-200 px-3 py-2 rounded w-44 focus:outline-none focus:border-cyan-400">
+                        <input type="text" id="new-node-name" placeholder="Name (e.g. US Server)" class="font-fira text-xs bg-slate-900 border border-slate-700 text-slate-200 px-3 py-2 rounded w-44 focus:outline-none focus:border-cyan-400">
                         <button type="button" onclick="registerNewMeshNode()" class="font-chakra text-xs py-2 px-4 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded transition font-bold uppercase">
-                            ADD TO MESH
+                            ADD SERVER
                         </button>
                     </div>
                 </div>
 
-                <!-- Ranked Mesh Nodes Table -->
+                <!-- Server Rankings Table -->
                 <div>
                     <div class="flex justify-between items-center mb-2">
-                        <h4 class="font-space text-xs font-semibold text-slate-300 uppercase">Configured Server Links &amp; Live Rankings</h4>
+                        <h4 class="font-space text-xs font-semibold text-slate-300 uppercase">Connected Servers &amp; Rankings</h4>
                         <button onclick="reloadMeshTopology()" class="font-chakra text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded transition">
-                            PROBE NOW
+                            CHECK NOW
                         </button>
                     </div>
 
@@ -512,18 +518,18 @@
                             <thead>
                                 <tr class="border-b border-slate-800 text-slate-400 uppercase font-space text-[11px]">
                                     <th class="py-2.5 px-3">Rank</th>
-                                    <th class="py-2.5 px-3">Server Link</th>
-                                    <th class="py-2.5 px-3">EWMA Latency</th>
-                                    <th class="py-2.5 px-3">Queue Backlog</th>
-                                    <th class="py-2.5 px-3">Route Score</th>
-                                    <th class="py-2.5 px-3">Health</th>
+                                    <th class="py-2.5 px-3">Server</th>
+                                    <th class="py-2.5 px-3">Response Time</th>
+                                    <th class="py-2.5 px-3">Jobs Waiting</th>
+                                    <th class="py-2.5 px-3">Score</th>
+                                    <th class="py-2.5 px-3">Status</th>
                                     <th class="py-2.5 px-3 text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="mesh-nodes-tbody" class="divide-y divide-slate-800/60">
                                 <tr>
                                     <td colspan="7" class="py-6 text-center text-slate-500 font-inter">
-                                        Probing registered Blast servers...
+                                        Checking connected servers...
                                     </td>
                                 </tr>
                             </tbody>
@@ -531,15 +537,253 @@
                     </div>
                 </div>
 
-                <!-- Explanation Box -->
+                <!-- Explanation -->
                 <div class="p-3 bg-slate-950 border border-slate-800/80 rounded font-sharetech text-xs text-slate-400">
-                    [ROUTING FORMULA] Score = (EWMA_RTT_ms * 0.5) + (Queue_Depth * 10.0 * 0.5). Lowest score wins. Local execution has a 5ms affinity bonus to eliminate redundant hops. Loop-protected via X-Blast-Hop-Count.
+                    Servers are ranked by a combination of response time and queue depth. The fastest server with the least load wins. Your primary server gets a small speed bonus to avoid unnecessary network hops.
                 </div>
 
             </div>
         </div>
 
-        <!-- Serious Live Log Stream & Pathway Diagnostic Terminal (End of Page) -->
+        <!-- ============================================================= -->
+        <!-- VIEW 6: SETTINGS & CREDENTIALS PERSISTENCE -->
+        <!-- ============================================================= -->
+        <div id="view-settings" class="hidden space-y-6">
+            <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5 space-y-6">
+                
+                <!-- Section Header -->
+                <div class="border-b border-slate-800 pb-4">
+                    <div class="flex flex-wrap justify-between items-start gap-4">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-amber-400 animate-pulse"></span>
+                                <h3 class="font-orbitron text-sm font-bold text-slate-100 tracking-wider uppercase">
+                                    Gateway Settings &amp; Credentials Persistence
+                                </h3>
+                                <span class="font-sharetech text-[10px] px-2 py-0.5 bg-amber-950/60 text-amber-300 border border-amber-500/40 rounded uppercase font-bold">
+                                    SYNCABLE PERSISTENCE ENGINE
+                                </span>
+                            </div>
+                            <p class="font-inter text-xs text-slate-400 mt-1">
+                                Configure Blast API Keys, the 3rd Common Cluster Key so all other Blast servers can connect, and Upstream Supabase credentials. Credentials persist across restarts via settings.json and .env (Clear-text active for private repositories).
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-sharetech text-[10px] px-2 py-1 bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 rounded uppercase font-bold">
+                                SETTINGS.JSON PERSISTENCE
+                            </span>
+                            <span id="settings-status-badge" class="font-space text-xs px-2.5 py-1 bg-slate-900 text-slate-300 border border-slate-700 rounded-lg font-semibold flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                                READY
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alert Feedback Banner -->
+                <div id="settings-alert-box" class="hidden p-3.5 rounded-lg border text-xs font-inter flex items-start justify-between gap-3 transition">
+                    <div class="flex items-start gap-2.5">
+                        <span id="settings-alert-icon" class="text-base leading-none"></span>
+                        <div id="settings-alert-msg" class="font-medium"></div>
+                    </div>
+                    <button onclick="document.getElementById('settings-alert-box').classList.add('hidden')" class="text-slate-400 hover:text-white">&times;</button>
+                </div>
+
+                <!-- Section 1: The 3 Keys Architecture -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-chakra text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+                            <span>1. BLAST KEYS ARCHITECTURE</span>
+                            <span class="text-[10px] text-slate-400 font-mono font-normal">(Primary, Dev, and Inter-Cluster Common Key)</span>
+                        </h4>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Key #1: Primary Client Key -->
+                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-space text-xs font-bold text-slate-300 uppercase">Key #1: Primary Client Key</span>
+                                <span class="font-sharetech text-[10px] text-cyan-400 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-500/30">APP -> BLAST</span>
+                            </div>
+                            <p class="font-inter text-[11px] text-slate-400">
+                                Primary API key for client apps (Next.js, Python, Flutter) sent in <code class="font-mono text-cyan-300">X-Blast-Key</code>.
+                            </p>
+                            <div class="relative">
+                                <input type="text" id="setting-key-1" placeholder="blast-secret-key-1" class="font-fira text-xs bg-slate-900 border border-slate-700 text-cyan-300 pl-3 pr-16 py-2 rounded w-full focus:outline-none focus:border-cyan-400">
+                                <div class="absolute right-1 top-1 flex items-center gap-1">
+                                    <button type="button" onclick="toggleFieldVis('setting-key-1', this)" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Toggle visibility">&#128065;</button>
+                                    <button type="button" onclick="copyFieldValue('setting-key-1')" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Copy key">&#128203;</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Key #2: Secondary / Dev Key -->
+                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-space text-xs font-bold text-slate-300 uppercase">Key #2: Secondary / Dev Key</span>
+                                <span class="font-sharetech text-[10px] text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700">DEV / SECONDARY</span>
+                            </div>
+                            <p class="font-inter text-[11px] text-slate-400">
+                                Secondary API key for staging apps or separate worker microservices.
+                            </p>
+                            <div class="relative">
+                                <input type="text" id="setting-key-2" placeholder="blast-dev-key" class="font-fira text-xs bg-slate-900 border border-slate-700 text-slate-200 pl-3 pr-16 py-2 rounded w-full focus:outline-none focus:border-cyan-400">
+                                <div class="absolute right-1 top-1 flex items-center gap-1">
+                                    <button type="button" onclick="toggleFieldVis('setting-key-2', this)" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Toggle visibility">&#128065;</button>
+                                    <button type="button" onclick="copyFieldValue('setting-key-2')" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Copy key">&#128203;</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Key #3: 3rd Common Key for Inter-Cluster Servers -->
+                        <div class="bg-slate-950 border-2 border-amber-500/60 shadow-lg shadow-amber-500/10 p-4 rounded-xl space-y-2 relative overflow-hidden">
+                            <div class="flex items-center justify-between">
+                                <span class="font-space text-xs font-bold text-amber-300 uppercase flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                                    Key #3: Cluster Common Key
+                                </span>
+                                <span class="font-sharetech text-[10px] text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-500/50 uppercase font-bold">
+                                    ALL SERVERS CONNECT HERE
+                                </span>
+                            </div>
+                            <p class="font-inter text-[11px] text-amber-200/80">
+                                <strong>Common shared key</strong> so all other Blast servers in your network or Render cluster can authenticate and interconnect with this instance.
+                            </p>
+                            <div class="relative">
+                                <input type="text" id="setting-cluster-secret" placeholder="blast-cluster-mesh-secret-key" class="font-fira text-xs bg-slate-900 border border-amber-500/50 text-amber-200 pl-3 pr-24 py-2 rounded w-full focus:outline-none focus:border-amber-400 font-bold">
+                                <div class="absolute right-1 top-1 flex items-center gap-1">
+                                    <button type="button" onclick="generateClusterKey()" class="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 text-[10px] font-mono rounded hover:bg-amber-500/30" title="Generate random key">GEN</button>
+                                    <button type="button" onclick="toggleFieldVis('setting-cluster-secret', this)" class="p-1 text-slate-400 hover:text-amber-300 text-xs" title="Toggle visibility">&#128065;</button>
+                                    <button type="button" onclick="copyFieldValue('setting-cluster-secret')" class="p-1 text-slate-400 hover:text-amber-300 text-xs" title="Copy key">&#128203;</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Upstream Supabase Credentials -->
+                <div class="space-y-4">
+                    <h4 class="font-chakra text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+                        <span>2. UPSTREAM SUPABASE CREDENTIALS</span>
+                        <span class="text-[10px] text-slate-400 font-mono font-normal">(Blast -> Supabase Connection)</span>
+                    </h4>
+
+                    <div class="bg-slate-950 border border-slate-800 p-5 rounded-xl space-y-4">
+                        <!-- Project URL -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label for="setting-supa-url" class="font-space text-xs font-bold text-slate-300 uppercase">
+                                    Supabase Project URL
+                                </label>
+                                <button type="button" onclick="testSupabaseConnection()" id="btn-test-supa" class="font-chakra text-[11px] px-2.5 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded transition font-semibold flex items-center gap-1">
+                                    TEST LIVE CONNECTION
+                                </button>
+                            </div>
+                            <input type="text" id="setting-supa-url" placeholder="https://your-project-id.supabase.co" class="font-fira text-xs bg-slate-900 border border-slate-700 text-cyan-300 px-3 py-2.5 rounded w-full focus:outline-none focus:border-cyan-400">
+                            <p class="font-inter text-[11px] text-slate-500 mt-1">
+                                The base HTTPS URL of your Supabase backend project.
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Anon Key -->
+                            <div>
+                                <label for="setting-supa-anon" class="font-space text-xs font-bold text-slate-300 uppercase block mb-1">
+                                    Supabase Anon API Key (Publishable)
+                                </label>
+                                <div class="relative">
+                                    <input type="text" id="setting-supa-anon" placeholder="sb_publishable_..." class="font-fira text-xs bg-slate-900 border border-slate-700 text-slate-200 pl-3 pr-16 py-2.5 rounded w-full focus:outline-none focus:border-cyan-400">
+                                    <div class="absolute right-1 top-1.5 flex items-center gap-1">
+                                        <button type="button" onclick="toggleFieldVis('setting-supa-anon', this)" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Toggle visibility">&#128065;</button>
+                                        <button type="button" onclick="copyFieldValue('setting-supa-anon')" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Copy key">&#128203;</button>
+                                    </div>
+                                </div>
+                                <p class="font-inter text-[11px] text-slate-500 mt-1">
+                                    Injected automatically by Blast into public queries as <code class="font-mono text-slate-400">apikey</code>.
+                                </p>
+                            </div>
+
+                            <!-- Service Role Key -->
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label for="setting-supa-service" class="font-space text-xs font-bold text-slate-300 uppercase">
+                                        Supabase Service Role Key (Admin / Bypass RLS)
+                                    </label>
+                                    <span class="font-sharetech text-[10px] text-slate-400 bg-slate-900 px-1 rounded">OPTIONAL</span>
+                                </div>
+                                <div class="relative">
+                                    <input type="text" id="setting-supa-service" placeholder="eyJhbGciOi..." class="font-fira text-xs bg-slate-900 border border-slate-700 text-slate-200 pl-3 pr-16 py-2.5 rounded w-full focus:outline-none focus:border-cyan-400">
+                                    <div class="absolute right-1 top-1.5 flex items-center gap-1">
+                                        <button type="button" onclick="toggleFieldVis('setting-supa-service', this)" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Toggle visibility">&#128065;</button>
+                                        <button type="button" onclick="copyFieldValue('setting-supa-service')" class="p-1 text-slate-400 hover:text-cyan-300 text-xs" title="Copy key">&#128203;</button>
+                                    </div>
+                                </div>
+                                <p class="font-inter text-[11px] text-slate-500 mt-1">
+                                    Optional secret key for privileged administrator operations and background workers.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Performance & Worker Tuning -->
+                <div class="space-y-4">
+                    <h4 class="font-chakra text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+                        <span>3. PERFORMANCE &amp; ENGINE TUNING</span>
+                    </h4>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
+                            <label for="setting-workers" class="font-space text-xs font-semibold text-slate-300 uppercase block mb-1">
+                                Worker Threads
+                            </label>
+                            <input type="number" id="setting-workers" min="1" max="64" value="4" class="font-fira text-xs bg-slate-900 border border-slate-700 text-cyan-300 px-3 py-2 rounded w-full focus:outline-none focus:border-cyan-400">
+                            <p class="font-inter text-[11px] text-slate-500 mt-1">Active background dispatchers</p>
+                        </div>
+                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
+                            <label for="setting-rate-rps" class="font-space text-xs font-semibold text-slate-300 uppercase block mb-1">
+                                Rate Limit (req/sec)
+                            </label>
+                            <input type="number" step="0.5" id="setting-rate-rps" min="1" max="1000" value="20" class="font-fira text-xs bg-slate-900 border border-slate-700 text-cyan-300 px-3 py-2 rounded w-full focus:outline-none focus:border-cyan-400">
+                            <p class="font-inter text-[11px] text-slate-500 mt-1">Token-bucket refill rate</p>
+                        </div>
+                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
+                            <label for="setting-rate-burst" class="font-space text-xs font-semibold text-slate-300 uppercase block mb-1">
+                                Rate Limit Burst
+                            </label>
+                            <input type="number" id="setting-rate-burst" min="1" max="5000" value="50" class="font-fira text-xs bg-slate-900 border border-slate-700 text-cyan-300 px-3 py-2 rounded w-full focus:outline-none focus:border-cyan-400">
+                            <p class="font-inter text-[11px] text-slate-500 mt-1">Maximum instantaneous burst capacity</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Actions & Persistence Bar -->
+                <div class="bg-slate-950 border border-cyan-500/30 p-5 rounded-xl flex flex-wrap items-center justify-between gap-4">
+                    <div class="space-y-1">
+                        <div class="font-space text-xs font-bold text-slate-200 uppercase flex items-center gap-2">
+                            <span>SYNCABLE PERSISTENCE MANAGER</span>
+                            <span id="env-file-badge" class="font-mono text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">.env</span>
+                        </div>
+                        <p class="font-inter text-xs text-slate-400">
+                            Clicking Save persists all credentials atomically to <code class="font-mono text-cyan-300">.env</code> and hot-syncs runtime state in memory without server restarts.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <button type="button" onclick="loadSettingsFromGateway()" class="font-chakra text-xs px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 rounded-lg transition font-semibold">
+                            RESET TO CURRENT
+                        </button>
+                        <button type="button" id="btn-save-settings" onclick="saveSettingsToGateway()" class="font-chakra text-xs px-6 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold tracking-wider rounded-lg shadow-lg shadow-cyan-400/20 uppercase transition flex items-center gap-2">
+                            <span id="save-spinner" class="hidden w-3 h-3 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+                            <span>SAVE &amp; PERSIST SETTINGS</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Live Log Stream -->
         <section class="mt-8 border border-slate-800 bg-[#070b12] rounded-xl overflow-hidden shadow-2xl">
             <!-- Header bar -->
             <div class="px-5 py-3.5 bg-slate-900/90 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
@@ -547,21 +791,21 @@
                     <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     <div>
                         <h3 class="font-orbitron text-xs font-bold text-white tracking-wider uppercase">
-                            LIVE TELEMETRY STREAM &amp; PATHWAY CONSOLE
+                            Live Activity Log
                         </h3>
                         <p class="font-inter text-[11px] text-slate-400">
-                            Real-time gateway logs: Ingress, Security, Mesh Route Scoring, Supabase Dispatch, and Egress
+                            Real-time log of everything happening: incoming requests, security checks, routing, and responses
                         </p>
                     </div>
                 </div>
 
-                <!-- Right controls & actions -->
+                <!-- Controls -->
                 <div class="flex flex-wrap items-center gap-2 font-chakra text-xs">
                     <button onclick="triggerLivePathwayTest()" id="btn-trigger-pathway" class="px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded font-semibold tracking-wide transition flex items-center gap-1.5">
-                        <span class="font-mono text-[11px] font-bold">[TEST]</span> TRIGGER LIVE PATHWAY TEST
+                        RUN FULL TEST
                     </button>
                     <button onclick="toggleLogAutoScroll()" id="btn-autoscroll" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded transition font-mono text-[11px]">
-                        SCROLL: ON
+                        AUTO-SCROLL: ON
                     </button>
                     <button onclick="clearServerLogs()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded transition font-mono text-[11px]">
                         CLEAR
@@ -579,7 +823,7 @@
                     <button onclick="setLogComponentFilter('ALL')" class="log-filter-btn px-2.5 py-0.5 rounded font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40" data-filter="ALL">ALL</button>
                     <button onclick="setLogComponentFilter('PATHWAY')" class="log-filter-btn px-2.5 py-0.5 rounded font-mono font-bold bg-slate-800/60 text-slate-400 hover:text-white" data-filter="PATHWAY">PATHWAY</button>
                     <button onclick="setLogComponentFilter('SUPABASE')" class="log-filter-btn px-2.5 py-0.5 rounded font-mono font-bold bg-slate-800/60 text-slate-400 hover:text-white" data-filter="SUPABASE">SUPABASE</button>
-                    <button onclick="setLogComponentFilter('MESH')" class="log-filter-btn px-2.5 py-0.5 rounded font-mono font-bold bg-slate-800/60 text-slate-400 hover:text-white" data-filter="MESH">MESH</button>
+                    <button onclick="setLogComponentFilter('MESH')" class="log-filter-btn px-2.5 py-0.5 rounded font-mono font-bold bg-slate-800/60 text-slate-400 hover:text-white" data-filter="MESH">ROUTING</button>
                     <button onclick="setLogComponentFilter('SECURITY')" class="log-filter-btn px-2.5 py-0.5 rounded font-mono font-bold bg-slate-800/60 text-slate-400 hover:text-white" data-filter="SECURITY">SECURITY</button>
                     <button onclick="setLogComponentFilter('QUEUE')" class="log-filter-btn px-2.5 py-0.5 rounded font-mono font-bold bg-slate-800/60 text-slate-400 hover:text-white" data-filter="QUEUE">QUEUE</button>
                     <button onclick="setLogComponentFilter('WORKER')" class="log-filter-btn px-2.5 py-0.5 rounded font-mono font-bold bg-slate-800/60 text-slate-400 hover:text-white" data-filter="WORKER">WORKER</button>
@@ -591,13 +835,13 @@
 
             <!-- Terminal output body -->
             <div id="live-telemetry-terminal" class="h-80 overflow-y-auto p-4 font-jetbrains text-xs bg-[#040711] space-y-1 text-slate-300 select-text">
-                <div class="text-slate-600 italic font-mono">[STANDBY] Connecting to Blast gateway live telemetry log stream...</div>
+                <div class="text-slate-600 italic font-mono">[WAITING] Connecting to Blast gateway for live logs...</div>
             </div>
 
             <!-- Terminal status footer -->
             <div class="px-5 py-2 bg-slate-950 border-t border-slate-900 flex justify-between items-center text-[11px] font-sharetech text-slate-500">
-                <span>BUFFER: IN-MEMORY RING CACHE (600 ENTRIES MAX)</span>
-                <span>DESTINATION: APP &gt; BLAST &gt; FASTEST ROUTE &gt; SUPABASE &gt; APP</span>
+                <span>KEEPS LAST 600 LOG ENTRIES</span>
+                <span>YOUR APP &gt; BLAST &gt; BEST SERVER &gt; SUPABASE &gt; YOUR APP</span>
             </div>
         </section>
 
@@ -605,7 +849,7 @@
 
     <!-- Footer -->
     <footer class="border-t border-slate-900 bg-[#06090e] py-4 text-center font-sharetech text-xs text-slate-500">
-        BLAST GATEWAY &copy; 2026 | BUILT BY RAYZIEN AND PHEONIX14 | ZERO EMOJIS ARCHITECTURE
+        BLAST GATEWAY &copy; 2026 | BUILT BY RAYZIEN AND PHEONIX14
     </footer>
 
     <!-- Interactive Dashboard Script -->
@@ -642,7 +886,7 @@
         }
 
         function showTab(tabName) {
-            const tabs = ['dashboard', 'console', 'security', 'dlq', 'cluster'];
+            const tabs = ['dashboard', 'console', 'security', 'dlq', 'cluster', 'settings'];
             tabs.forEach(t => {
                 const view = document.getElementById('view-' + t);
                 const btn = document.getElementById('tab-' + t);
@@ -657,6 +901,193 @@
 
             if (tabName === 'dlq') reloadDlqList();
             if (tabName === 'cluster') reloadClusterGrid();
+            if (tabName === 'settings') loadSettingsFromGateway();
+        }
+
+        // =========================================================
+        // Settings & Persistence Handlers
+        // =========================================================
+        function toggleFieldVis(fieldId, btn) {
+            const f = document.getElementById(fieldId);
+            if (!f) return;
+            if (f.type === 'password') {
+                f.type = 'text';
+                btn.innerHTML = '&#128274;';
+            } else {
+                f.type = 'password';
+                btn.innerHTML = '&#128065;';
+            }
+        }
+
+        function copyFieldValue(fieldId) {
+            const f = document.getElementById(fieldId);
+            if (!f || !f.value) return;
+            navigator.clipboard.writeText(f.value).then(() => {
+                showSettingsAlert('success', `Copied credential value to clipboard.`);
+            }).catch(() => {
+                prompt('Copy this value:', f.value);
+            });
+        }
+
+        function generateClusterKey() {
+            const arr = new Uint8Array(16);
+            crypto.getRandomValues(arr);
+            const hex = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+            const newKey = `blast_cluster_${hex}`;
+            const field = document.getElementById('setting-cluster-secret');
+            field.value = newKey;
+            field.type = 'text';
+            showSettingsAlert('info', `Generated new Cluster Mesh Secret Key: ${newKey}. Click 'SAVE & PERSIST' to apply.`);
+        }
+
+        function showSettingsAlert(type, msg) {
+            const box = document.getElementById('settings-alert-box');
+            const msgEl = document.getElementById('settings-alert-msg');
+            const iconEl = document.getElementById('settings-alert-icon');
+            if (!box || !msgEl) return;
+
+            box.className = 'p-3.5 rounded-lg border text-xs font-inter flex items-start justify-between gap-3 transition';
+
+            if (type === 'success') {
+                box.classList.add('bg-emerald-950/60', 'border-emerald-500/50', 'text-emerald-300');
+                if (iconEl) iconEl.innerHTML = '&#10003;';
+            } else if (type === 'error') {
+                box.classList.add('bg-red-950/60', 'border-red-500/50', 'text-red-300');
+                if (iconEl) iconEl.innerHTML = '&#9888;';
+            } else {
+                box.classList.add('bg-cyan-950/60', 'border-cyan-500/50', 'text-cyan-300');
+                if (iconEl) iconEl.innerHTML = '&#8505;';
+            }
+
+            msgEl.innerText = msg;
+            box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        async function loadSettingsFromGateway() {
+            const host = getActiveHost();
+            const badge = document.getElementById('settings-status-badge');
+            if (badge) badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-cyan-400 animate-spin"></span> LOADING...';
+
+            try {
+                const res = await fetch(`${host}/v1/settings`, {
+                    headers: { 'X-Blast-Key': getActiveKey() }
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                document.getElementById('setting-key-1').value = data.blast_api_key_1 || '';
+                document.getElementById('setting-key-2').value = data.blast_api_key_2 || '';
+                document.getElementById('setting-cluster-secret').value = data.blast_cluster_secret || '';
+
+                document.getElementById('setting-supa-url').value = data.supabase_url || '';
+                document.getElementById('setting-supa-anon').value = data.supabase_anon_key || '';
+                document.getElementById('setting-supa-service').value = data.supabase_service_role_key || '';
+
+                if (document.getElementById('setting-workers')) document.getElementById('setting-workers').value = data.max_workers || 4;
+                if (document.getElementById('setting-rate-rps')) document.getElementById('setting-rate-rps').value = data.rate_limit_rps || 20;
+                if (document.getElementById('setting-rate-burst')) document.getElementById('setting-rate-burst').value = data.rate_limit_burst || 50;
+                if (document.getElementById('env-file-badge')) document.getElementById('env-file-badge').innerText = data.env_path || '.env';
+
+                if (badge) badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400"></span> SYNCED';
+            } catch (err) {
+                if (badge) badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span> OFFLINE / DEFAULT';
+                showSettingsAlert('error', `Failed loading settings from gateway: ${err.message}. Ensure gateway is connected.`);
+            }
+        }
+
+        async function saveSettingsToGateway() {
+            const host = getActiveHost();
+            const btn = document.getElementById('btn-save-settings');
+            const spinner = document.getElementById('save-spinner');
+            const badge = document.getElementById('settings-status-badge');
+
+            const payload = {
+                blast_api_key_1: document.getElementById('setting-key-1').value.trim(),
+                blast_api_key_2: document.getElementById('setting-key-2').value.trim(),
+                blast_cluster_secret: document.getElementById('setting-cluster-secret').value.trim(),
+                supabase_url: document.getElementById('setting-supa-url').value.trim(),
+                supabase_anon_key: document.getElementById('setting-supa-anon').value.trim(),
+                supabase_service_role_key: document.getElementById('setting-supa-service').value.trim(),
+                max_workers: parseInt(document.getElementById('setting-workers')?.value || '4', 10),
+                rate_limit_rps: parseFloat(document.getElementById('setting-rate-rps')?.value || '20'),
+                rate_limit_burst: parseInt(document.getElementById('setting-rate-burst')?.value || '50', 10),
+            };
+
+            if (!payload.blast_api_key_1 && !payload.blast_api_key_2) {
+                showSettingsAlert('error', 'At least one Blast Client API Key must be provided.');
+                return;
+            }
+            if (!payload.blast_cluster_secret) {
+                showSettingsAlert('error', 'Common Cluster Mesh Secret Key cannot be empty.');
+                return;
+            }
+            if (payload.supabase_url && !payload.supabase_url.startsWith('http://') && !payload.supabase_url.startsWith('https://')) {
+                showSettingsAlert('error', 'Supabase Project URL must start with http:// or https://');
+                return;
+            }
+
+            if (spinner) spinner.classList.remove('hidden');
+            if (btn) btn.disabled = true;
+            if (badge) badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> SAVING & SYNCING...';
+
+            try {
+                const res = await fetch(`${host}/v1/settings`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Blast-Key': getActiveKey()
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.details || data.error || `HTTP ${res.status}`);
+                }
+
+                showSettingsAlert('success', 'Settings successfully saved to settings.json and .env, and hot-synchronized across all subsystems!');
+                if (badge) badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400"></span> PERSISTED & LIVE';
+
+                // Update current key in connection bar if changed
+                if (payload.blast_api_key_1) {
+                    document.getElementById('cfg-key').value = payload.blast_api_key_1;
+                    saveConnectionParams();
+                }
+
+                // Refresh health and metrics
+                reconnectGateway();
+            } catch (err) {
+                showSettingsAlert('error', `Failed saving settings: ${err.message}`);
+                if (badge) badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-400"></span> SAVE FAILED';
+            } finally {
+                if (spinner) spinner.classList.add('hidden');
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        async function testSupabaseConnection() {
+            const host = getActiveHost();
+            const btn = document.getElementById('btn-test-supa');
+            const origText = btn.innerText;
+            btn.innerText = 'TESTING...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${host}/v1/proxy/auth/v1/health`, {
+                    headers: { 'X-Blast-Key': getActiveKey() }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    showSettingsAlert('success', `Supabase Connection SUCCESS! Upstream status HTTP 200: ${JSON.stringify(data)}`);
+                } else {
+                    const text = await res.text();
+                    showSettingsAlert('error', `Supabase returned HTTP ${res.status}: ${text}`);
+                }
+            } catch (err) {
+                showSettingsAlert('error', `Could not reach Supabase via Blast proxy: ${err.message}`);
+            } finally {
+                btn.innerText = origText;
+                btn.disabled = false;
+            }
         }
 
         function setMode(mode) {
@@ -678,7 +1109,7 @@
                 const parsed = JSON.parse(ta.value);
                 ta.value = JSON.stringify(parsed, null, 2);
             } catch (e) {
-                alert('Invalid JSON syntax: ' + e.message);
+                alert('Invalid JSON: ' + e.message);
             }
         }
 
@@ -751,7 +1182,7 @@
             const latEl = document.getElementById('telemetry-latency');
             const jobIdEl = document.getElementById('telemetry-job-id');
 
-            outEl.innerText = "// Dispatched to Blast Gateway. Awaiting upstream response...";
+            outEl.innerText = "// Sending request...";
             const start = performance.now();
 
             try {
@@ -778,9 +1209,9 @@
                 }
                 fetchQueueMetrics();
             } catch (err) {
-                badgeEl.innerText = "NETWORK ERROR";
+                badgeEl.innerText = "CONNECTION ERROR";
                 badgeEl.className = "font-fira text-xs px-2.5 py-1 bg-rose-950 text-rose-300 rounded font-semibold";
-                outEl.innerText = `[ERROR] Failed to communicate with Blast: ${err.message}`;
+                outEl.innerText = `[ERROR] Could not reach Blast server: ${err.message}`;
             }
         }
 
@@ -795,29 +1226,29 @@
             if (type === 'sqli') {
                 url = `${host}/v1/proxy/rest/v1/users?id=1;%20DROP%20TABLE%20users%20--`;
                 opts.method = 'GET';
-                term.innerText += `\n\n[ATTACK SIMULATION] SQL Injection attempt:\nGET ${url}`;
+                term.innerText += `\n\n[TEST] SQL Injection attempt:\nGET ${url}`;
             } else if (type === 'xss') {
                 url = `${host}/v1/queue/rest/v1/comments`;
                 opts.method = 'POST';
                 opts.headers['Content-Type'] = 'application/json';
-                opts.body = JSON.stringify({ comment: "<script>alert('pwned')</script>" });
-                term.innerText += `\n\n[ATTACK SIMULATION] XSS Script Tag attempt:\nPOST ${url}\nBody: ${opts.body}`;
+                opts.body = JSON.stringify({ comment: "<scr" + "ipt>alert('pwned')<\/scr" + "ipt>" });
+                term.innerText += `\n\n[TEST] Script Injection attempt:\nPOST ${url}\nBody: ${opts.body}`;
             } else if (type === 'traversal') {
                 url = `${host}/v1/proxy/../../etc/passwd`;
                 opts.method = 'GET';
-                term.innerText += `\n\n[ATTACK SIMULATION] Path Traversal attempt:\nGET ${url}`;
+                term.innerText += `\n\n[TEST] Path Traversal attempt:\nGET ${url}`;
             } else if (type === 'valid') {
                 url = `${host}/v1/queue/rest/v1/orders`;
                 opts.method = 'POST';
                 opts.headers['Content-Type'] = 'application/json';
                 opts.body = JSON.stringify({ customer: "Atlas Verified", amount: 150.00 });
-                term.innerText += `\n\n[SAFE VERIFICATION] Compliant request:\nPOST ${url}`;
+                term.innerText += `\n\n[TEST] Normal safe request:\nPOST ${url}`;
             }
 
             try {
                 const res = await fetch(url, opts);
                 const txt = await res.text();
-                term.innerText += `\n[INTERCEPTION REPORT] HTTP ${res.status}\nResponse: ${txt}`;
+                term.innerText += `\n[RESULT] HTTP ${res.status}\nResponse: ${txt}`;
                 term.scrollTop = term.scrollHeight;
             } catch (e) {
                 term.innerText += `\n[ERROR] ${e.message}`;
@@ -835,7 +1266,7 @@
                 if (res.ok) {
                     const data = await res.json();
                     if (!data.items || data.items.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-slate-500 font-inter">No dead letter jobs found. All queues healthy.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-slate-500 font-inter">No failed jobs. Everything is running smoothly.</td></tr>`;
                         return;
                     }
                     tbody.innerHTML = data.items.map(item => `
@@ -863,12 +1294,12 @@
                     headers: { 'X-Blast-Key': key }
                 });
                 if (res.ok) {
-                    alert(`Job ${jobId} re-queued successfully.`);
+                    alert(`Job ${jobId} has been re-queued.`);
                     reloadDlqList();
                     fetchQueueMetrics();
                 }
             } catch (e) {
-                alert('Re-queue failed: ' + e.message);
+                alert('Retry failed: ' + e.message);
             }
         }
 
@@ -883,7 +1314,7 @@
                     badge.innerText = data.fastest_route ? data.fastest_route : "LOCAL";
 
                     if (!data.nodes || data.nodes.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500 font-inter">No mesh nodes detected.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500 font-inter">No servers found in the network.</td></tr>`;
                         return;
                     }
 
@@ -899,11 +1330,11 @@
                                 </td>
                                 <td class="py-2.5 px-3">
                                     <span class="font-bold text-white">${n.name}</span>
-                                    <div class="text-[11px] text-slate-400 font-fira">${n.url} ${n.is_local ? '(Local)' : ''}</div>
+                                    <div class="text-[11px] text-slate-400 font-fira">${n.url} ${n.is_local ? '(This Server)' : ''}</div>
                                 </td>
                                 <td class="py-2.5 px-3 ${latColor} font-bold">${n.ewma_latency_ms} ms</td>
                                 <td class="py-2.5 px-3 text-slate-300">${n.queue_depth} jobs</td>
-                                <td class="py-2.5 px-3 text-cyan-300 font-mono">${n.composite_score !== null ? n.composite_score : 'INF'}</td>
+                                <td class="py-2.5 px-3 text-cyan-300 font-mono">${n.composite_score !== null ? n.composite_score : 'N/A'}</td>
                                 <td class="py-2.5 px-3">
                                     <span class="px-1.5 py-0.5 rounded text-[10px] ${n.is_healthy ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30' : 'bg-rose-950 text-rose-300 border border-rose-500/30'}">
                                         ${n.is_healthy ? 'ONLINE' : 'OFFLINE'}
@@ -931,7 +1362,7 @@
             const name = nameInput.value.trim();
 
             if (!url) {
-                alert('Please enter a valid Blast server link URL');
+                alert('Please enter a server URL');
                 return;
             }
 
@@ -947,16 +1378,16 @@
                     reloadMeshTopology();
                 } else {
                     const err = await res.json();
-                    alert('Registration failed: ' + (err.error || res.statusText));
+                    alert('Could not add server: ' + (err.error || res.statusText));
                 }
             } catch (e) {
-                alert('Network error registering node: ' + e.message);
+                alert('Connection error: ' + e.message);
             }
         }
 
         async function removeMeshNode(url) {
             const host = getActiveHost();
-            if (!confirm(`Remove server link ${url} from mesh?`)) return;
+            if (!confirm(`Remove server ${url} from the network?`)) return;
             try {
                 const res = await fetch(`${host}/v1/mesh/nodes`, {
                     method: 'DELETE',
@@ -974,7 +1405,7 @@
         }
 
         // =============================================================
-        // Live Telemetry Stream & Pathway Logging
+        // Live Log Stream
         // =============================================================
         let lastLogId = 0;
         let logAutoScroll = true;
@@ -1030,7 +1461,7 @@
             }
 
             if (filtered.length === 0) {
-                term.innerHTML = `<div class="text-slate-600 italic font-mono">[EMPTY] No log events found matching filter '${currentLogComponentFilter}'.</div>`;
+                term.innerHTML = `<div class="text-slate-600 italic font-mono">[EMPTY] No log entries matching '${currentLogComponentFilter}'.</div>`;
                 return;
             }
 
@@ -1069,7 +1500,7 @@
             const btn = document.getElementById('btn-trigger-pathway');
             if (btn) {
                 btn.disabled = true;
-                btn.innerHTML = `<span class="font-mono text-[11px] font-bold">[TESTING]</span> EXECUTING PATHWAY...`;
+                btn.innerHTML = `RUNNING TEST...`;
             }
 
             try {
@@ -1077,11 +1508,11 @@
                 const data = await res.json();
                 await pollLiveLogs();
             } catch (err) {
-                alert('Pathway test failed: ' + err.message);
+                alert('Test failed: ' + err.message);
             } finally {
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerHTML = `<span class="font-mono text-[11px] font-bold">[TEST]</span> TRIGGER LIVE PATHWAY TEST`;
+                    btn.innerHTML = `RUN FULL TEST`;
                 }
             }
         }
@@ -1090,7 +1521,7 @@
             logAutoScroll = !logAutoScroll;
             const btn = document.getElementById('btn-autoscroll');
             if (btn) {
-                btn.innerText = logAutoScroll ? 'SCROLL: ON' : 'SCROLL: OFF';
+                btn.innerText = logAutoScroll ? 'AUTO-SCROLL: ON' : 'AUTO-SCROLL: OFF';
                 btn.className = logAutoScroll
                     ? 'px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded transition font-mono text-[11px]'
                     : 'px-2.5 py-1.5 bg-rose-950/40 text-rose-300 border border-rose-500/30 rounded transition font-mono text-[11px]';
@@ -1122,13 +1553,13 @@
         function copyTerminalLogs() {
             const lines = allBufferedLogs.map(l => `[${l.timestamp}] [${l.level}] [${l.component}] ${l.message}`).join('\n');
             navigator.clipboard.writeText(lines).then(() => {
-                alert(`Copied ${allBufferedLogs.length} log lines to clipboard.`);
+                alert(`Copied ${allBufferedLogs.length} log lines.`);
             }).catch(() => {
-                alert('Could not access clipboard.');
+                alert('Could not copy to clipboard.');
             });
         }
 
-        // Initialize and start background heartbeat
+        // Initialize and start background polling
         initConnectionParams();
         reconnectGateway();
         setInterval(reconnectGateway, 4000);

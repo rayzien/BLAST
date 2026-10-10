@@ -83,3 +83,8 @@ class QueueManager:
     def retry_dlq_job(self, job_id: str) -> bool:
         """Retry a job stored in DLQ."""
         return self.storage.retry_dlq_job(job_id)
+
+    def close(self):
+        """Close storage resources."""
+        if hasattr(self.storage, "close"):
+            self.storage.close()

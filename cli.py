@@ -85,12 +85,19 @@ def open_browser_delayed(url: str, delay: float = 1.0):
     threading.Thread(target=_open, daemon=True).start()
 
 
+def _resolve_env_path(filepath: str = ".env") -> str:
+    if filepath == ".env":
+        return os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    return filepath
+
+
 def load_env_file(filepath: str = ".env") -> dict:
     """Parse key-value pairs from .env if present."""
+    target_path = _resolve_env_path(filepath)
     env_vars = {}
-    if os.path.exists(filepath):
+    if os.path.exists(target_path):
         try:
-            with open(filepath, "r", encoding="utf-8") as f:
+            with open(target_path, "r", encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if line and not line.startswith("#") and "=" in line:
@@ -103,6 +110,7 @@ def load_env_file(filepath: str = ".env") -> dict:
 
 def save_env_file(env_vars: dict, filepath: str = ".env"):
     """Persist environment configuration."""
+    target_path = _resolve_env_path(filepath)
     try:
         lines = [
             "# BLAST CONFIGURATION\n",
@@ -111,11 +119,11 @@ def save_env_file(env_vars: dict, filepath: str = ".env"):
         ]
         for k, v in env_vars.items():
             lines.append(f"{k}={v}\n")
-        with open(filepath, "w", encoding="utf-8") as f:
+        with open(target_path, "w", encoding="utf-8") as f:
             f.writelines(lines)
-        print(f"[BLAST] Successfully saved configuration to {filepath}")
+        print(f"[BLAST] Successfully saved configuration to {target_path}")
     except Exception as e:
-        print(f"[WARN] Failed to write {filepath}: {e}")
+        print(f"[WARN] Failed to write {target_path}: {e}")
 
 
 def run_guided_setup():
