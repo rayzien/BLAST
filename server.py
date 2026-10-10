@@ -2,6 +2,7 @@
 Guaranteed zero emojis.
 """
 
+import os
 import json
 from typing import Optional, Any
 from flask import Flask, request, jsonify, Response
@@ -52,8 +53,8 @@ def create_app(
     # -------------------------------------------------------------
     @app.before_request
     def security_check():
-        # Public endpoints (health check and cluster heartbeats)
-        if request.path in ("/health", "/") or request.path.startswith("/v1/cluster/heartbeat"):
+        # Public endpoints (health check, web GUI, and cluster heartbeats)
+        if request.path in ("/health", "/", "/gui") or request.path.startswith("/v1/cluster/heartbeat"):
             return None
 
         # 1. Firewall validation (methods, payload size, path traversal)
@@ -93,8 +94,18 @@ def create_app(
         return None
 
     # -------------------------------------------------------------
-    # General Endpoints
+    # General & Web GUI Endpoints
     # -------------------------------------------------------------
+    @app.route("/", methods=["GET"])
+    @app.route("/gui", methods=["GET"])
+    def serve_gui():
+        """Serve the Blast Web GUI."""
+        gui_path = os.path.join(os.path.dirname(__file__), "Demo.html")
+        if os.path.exists(gui_path):
+            with open(gui_path, "r", encoding="utf-8") as f:
+                return f.read(), 200, {"Content-Type": "text/html; charset=utf-8"}
+        return jsonify({"message": "Blast Gateway is running. GUI file Demo.html not found."}), 200
+
     @app.route("/health", methods=["GET"])
     def health():
         sup: Optional[WorkerSupervisor] = app.config.get("BLAST_SUPERVISOR")
