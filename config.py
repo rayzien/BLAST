@@ -33,6 +33,14 @@ class BlastConfig:
     )
     CLUSTER_HEARTBEAT_INTERVAL: float = float(os.getenv("BLAST_CLUSTER_HEARTBEAT_INTERVAL", "15.0"))
 
+    # Mesh and Multiple Blast Server Links (for fastest route selection)
+    SERVER_LINKS: List[str] = field(
+        default_factory=lambda: [
+            u.strip().rstrip("/") for u in os.getenv("BLAST_SERVER_LINKS", "").split(",") if u.strip()
+        ]
+    )
+    MESH_ROUTING_ENABLED: bool = os.getenv("BLAST_MESH_ROUTING_ENABLED", "true").lower() in ("true", "1", "yes")
+
     # Server settings
     HOST: str = os.getenv("BLAST_HOST", "0.0.0.0")
     PORT: int = int(os.getenv("BLAST_PORT", "8080"))

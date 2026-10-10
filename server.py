@@ -1,4 +1,4 @@
-"""Flask application entrypoint and HTTP API routing for Blast.
+"""Flask application entrypoint and HTTP API routing for Blast with Smart Mesh Router.
 Guaranteed zero emojis.
 """
 
@@ -16,6 +16,7 @@ from supabase.client import SupabaseClient
 from supabase.proxy import ProxyHandler
 from worker.supervisor import WorkerSupervisor
 from cluster.peer_manager import ClusterManager
+from mesh.router import SmartMeshRouter
 from logger import logger
 
 
@@ -26,6 +27,7 @@ def create_app(
     worker_supervisor: Optional[WorkerSupervisor] = None,
     cluster_manager: Optional[ClusterManager] = None,
     security_checker: Optional[SecurityChecker] = None,
+    mesh_router: Optional[SmartMeshRouter] = None,
 ) -> Flask:
     """Application factory for Blast API server."""
     app = Flask(__name__)
@@ -40,6 +42,8 @@ def create_app(
     supabase_client = supabase_client or SupabaseClient(cfg)
     proxy_handler = ProxyHandler(cfg, client=supabase_client, firewall=firewall)
     cluster_mgr = cluster_manager or ClusterManager(cfg)
+    smart_mesh = mesh_router or SmartMeshRouter(cfg)
+    smart_mesh.start()
 
     # Attach components to app context
     app.config["BLAST_SUPERVISOR"] = worker_supervisor
@@ -47,13 +51,14 @@ def create_app(
     app.config["BLAST_QUEUE_MANAGER"] = queue_manager
     app.config["BLAST_CLUSTER_MANAGER"] = cluster_mgr
     app.config["BLAST_SECURITY_CHECKER"] = sec_checker
+    app.config["BLAST_MESH_ROUTER"] = smart_mesh
 
     # -------------------------------------------------------------
     # Security Middleware
     # -------------------------------------------------------------
     @app.before_request
     def security_check():
-        # Public endpoints (health check, web GUI in pages/, and cluster heartbeats)
+        # Public endpoints (health check, web GUI in pages/, and cluster/mesh heartbeats)
         if request.path in ("/health", "/", "/gui") or request.path.startswith(("/v1/cluster/heartbeat", "/pages")):
             return None
 
@@ -126,9 +131,53 @@ def create_app(
             "service": "blast",
             "node_id": cfg.NODE_ID,
             "security_checker_active": True,
+            "mesh_routing_enabled": cfg.MESH_ROUTING_ENABLED,
             "workers_running": sup.is_alive() if sup else False,
             "supabase_configured": bool(cfg.SUPABASE_URL),
         })
+
+    # -------------------------------------------------------------
+    # Smart Mesh & Fastest Route Endpoints
+    # -------------------------------------------------------------
+    @app.route("/v1/mesh/routes", methods=["GET"])
+    def mesh_routes():
+        """Get live telemetry of all registered Blast server nodes, latencies, and rankings."""
+        # Update local queue depth before reporting
+        stats = queue_manager.get_stats()
+        smart_mesh.update_local_queue_depth(stats.get("pending", 0) + stats.get("processing", 0))
+        return jsonify(smart_mesh.get_mesh_topology()), 200
+
+    @app.route("/v1/mesh/nodes", methods=["POST"])
+    def add_mesh_node():
+        """Dynamically register a new Blast server link."""
+        data = request.get_json(silent=True) or {}
+        url = data.get("url")
+        if not url:
+            return jsonify({"error": "Missing 'url' parameter"}), 400
+        name = data.get("name", "")
+        node = smart_mesh.add_node(url=url, name=name)
+        return jsonify({"status": "registered", "node": node.to_dict()}), 201
+
+    @app.route("/v1/mesh/nodes", methods=["DELETE"])
+    def remove_mesh_node():
+        """Remove a Blast server link."""
+        data = request.get_json(silent=True) or {}
+        url = data.get("url")
+        if not url:
+            return jsonify({"error": "Missing 'url' parameter"}), 400
+        success = smart_mesh.remove_node(url=url)
+        return jsonify({"status": "removed" if success else "not_found"}), 200
+
+    @app.route("/v1/mesh/status", methods=["GET"])
+    def mesh_status():
+        decision = smart_mesh.select_fastest_route()
+        return jsonify({
+            "mesh_active": True,
+            "fastest_route_url": decision.target_node.url,
+            "fastest_route_is_local": decision.is_local,
+            "routing_reason": decision.reason,
+            "total_nodes": len(smart_mesh.nodes),
+        }), 200
 
     # -------------------------------------------------------------
     # Cluster Endpoints (Interconnected Render instances)
@@ -169,6 +218,7 @@ def create_app(
         """Enqueue an asynchronous request after security verification to be processed reliably to Supabase."""
         client_id = request.environ.get("blast_client_id", "anonymous")
         idempotency_key = request.headers.get("X-Idempotency-Key") or request.headers.get("Idempotency-Key")
+        hop_count = int(request.headers.get("X-Blast-Hop-Count", "0"))
 
         priority = 0
         try:
@@ -182,7 +232,7 @@ def create_app(
         sanitized_headers = firewall.sanitize_headers(dict(request.headers))
         body = request.get_data(as_text=True) if request.data else None
 
-        # Execute Deep Security Checker on Inbound Request
+        # 1. Execute Deep Security Checker on Inbound Request
         is_valid, err_code, err_details = sec_checker.verify_inbound_request(
             method=method,
             path=clean_path,
@@ -198,6 +248,38 @@ def create_app(
                 "details": err_details,
             }), 400
 
+        # 2. Smart Mesh Dynamic Fastest Route Selection (if mesh enabled and first hop)
+        if cfg.MESH_ROUTING_ENABLED and hop_count == 0:
+            stats = queue_manager.get_stats()
+            smart_mesh.update_local_queue_depth(stats.get("pending", 0) + stats.get("processing", 0))
+            route_decision = smart_mesh.select_fastest_route(hop_count=hop_count)
+
+            if not route_decision.is_local:
+                logger.info(
+                    "MESH",
+                    f"Dynamic routing selected peer '{route_decision.target_node.url}' for {method} {clean_path} (Reason: {route_decision.reason})"
+                )
+                try:
+                    f_status, f_headers, f_body = smart_mesh.forward_to_peer(
+                        node=route_decision.target_node,
+                        subpath=f"/v1/queue{clean_path}",
+                        method=method,
+                        headers=dict(request.headers),
+                        params=dict(request.args),
+                        body=body,
+                    )
+                    flask_resp = Response(
+                        f_body,
+                        status=f_status,
+                        content_type=f_headers.get("content-type", "application/json"),
+                    )
+                    flask_resp.headers["X-Blast-Routed-Via"] = route_decision.target_node.url
+                    flask_resp.headers["X-Blast-Route-Score"] = str(round(route_decision.score, 2))
+                    return flask_resp
+                except Exception as exc:
+                    logger.warn("MESH", f"Peer forward failed ({exc}), falling back to local queue.")
+
+        # 3. Local Enqueue Execution
         job, is_new = queue_manager.enqueue(
             method=method,
             path=clean_path,
@@ -216,6 +298,7 @@ def create_app(
             "job_id": job.id,
             "is_new": is_new,
             "idempotency_key": idempotency_key,
+            "routed_via": "local",
             "poll_url": f"/v1/jobs/{job.id}",
             "job": job.to_dict(),
         }), 202
@@ -267,6 +350,7 @@ def create_app(
         """Synchronously forward verified request through Blast directly to Supabase."""
         clean_path = f"/{target_path.lstrip('/')}"
         body = request.get_data(as_text=True) if request.data else None
+        hop_count = int(request.headers.get("X-Blast-Hop-Count", "0"))
 
         # 1. Inbound Security Verification
         is_valid, err_code, err_details = sec_checker.verify_inbound_request(
@@ -284,7 +368,35 @@ def create_app(
                 "details": err_details,
             }), 400
 
-        # 2. Upstream Execution
+        # 2. Smart Mesh Dynamic Routing for Proxy (if mesh enabled and first hop)
+        if cfg.MESH_ROUTING_ENABLED and hop_count == 0:
+            route_decision = smart_mesh.select_fastest_route(hop_count=hop_count)
+            if not route_decision.is_local:
+                logger.info(
+                    "MESH",
+                    f"Dynamic routing selected peer '{route_decision.target_node.url}' for proxy {request.method} {clean_path}"
+                )
+                try:
+                    f_status, f_headers, f_body = smart_mesh.forward_to_peer(
+                        node=route_decision.target_node,
+                        subpath=f"/v1/proxy{clean_path}",
+                        method=request.method,
+                        headers=dict(request.headers),
+                        params=dict(request.args),
+                        body=body,
+                    )
+                    flask_resp = Response(
+                        f_body,
+                        status=f_status,
+                        content_type=f_headers.get("content-type", "application/json"),
+                    )
+                    flask_resp.headers["X-Blast-Routed-Via"] = route_decision.target_node.url
+                    flask_resp.headers["X-Blast-Route-Score"] = str(round(route_decision.score, 2))
+                    return flask_resp
+                except Exception as exc:
+                    logger.warn("MESH", f"Peer proxy failed ({exc}), falling back to local proxy execution.")
+
+        # 3. Local Upstream Execution to Supabase
         status_code, resp_headers, resp_body = proxy_handler.forward(
             method=request.method,
             supabase_path=clean_path,
@@ -293,7 +405,7 @@ def create_app(
             body=body,
         )
 
-        # 3. Outbound Response Verification & Sanitization (preventing DB leaks)
+        # 4. Outbound Response Verification & Sanitization (preventing DB leaks)
         clean_status, clean_headers, clean_body = sec_checker.verify_and_sanitize_response(
             status_code=status_code,
             response_headers=resp_headers,
@@ -309,6 +421,7 @@ def create_app(
             if k.lower() in ("preference-applied", "content-range", "x-total-count", "x-content-type-options", "x-frame-options", "x-xss-protection", "x-blast-security-verified"):
                 flask_resp.headers[k] = v
 
+        flask_resp.headers["X-Blast-Routed-Via"] = "local"
         return flask_resp
 
     return app

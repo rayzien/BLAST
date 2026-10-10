@@ -457,22 +457,85 @@
         </div>
 
         <!-- ============================================================= -->
-        <!-- VIEW 5: CLUSTER TOPOLOGY -->
+        <!-- ============================================================= -->
+        <!-- VIEW 5: SMART MESH & FASTEST ROUTE TOPOLOGY -->
         <!-- ============================================================= -->
         <div id="view-cluster" class="hidden space-y-6">
-            <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5">
-                <div class="border-b border-slate-800 pb-3 mb-4">
-                    <h3 class="font-orbitron text-sm font-bold text-slate-200 tracking-wider uppercase">
-                        [RENDER MULTI-INSTANCE CLUSTER TOPOLOGY]
-                    </h3>
-                    <p class="font-inter text-xs text-slate-400 mt-1">
-                        Active Blast nodes interconnected with shared Redis queue storage and heartbeat peer discovery.
-                    </p>
+            <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5 space-y-6">
+                
+                <!-- Section Header & Active Fastest Route Banner -->
+                <div class="border-b border-slate-800 pb-4">
+                    <div class="flex flex-wrap justify-between items-start gap-4">
+                        <div>
+                            <h3 class="font-orbitron text-sm font-bold text-slate-200 tracking-wider uppercase">
+                                [SMART MESH: DYNAMIC FASTEST ROUTE SELECTION]
+                            </h3>
+                            <p class="font-inter text-xs text-slate-400 mt-1">
+                                App requests are automatically routed to the fastest, least-pressured Blast server link across the mesh.
+                            </p>
+                        </div>
+                        <div class="bg-cyan-950/40 border border-cyan-500/40 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                            <span class="font-space text-xs text-slate-400 uppercase font-semibold">Active Fastest Route:</span>
+                            <span id="fastest-route-badge" class="font-fira text-xs text-cyan-300 font-bold">CALCULATING...</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="cluster-nodes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- Loaded dynamically via JavaScript -->
+                <!-- Register New Blast Server Link Form -->
+                <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
+                    <h4 class="font-chakra text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">
+                        [+ REGISTER NEW BLAST SERVER LINK]
+                    </h4>
+                    <p class="font-inter text-xs text-slate-400 mb-3">
+                        Add an additional Blast server URL (e.g. Render, AWS, or local instance). Traffic will automatically balance to it when it is faster or less loaded.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <input type="text" id="new-node-url" placeholder="https://blast-node-2.onrender.com" class="font-fira text-xs bg-slate-900 border border-slate-700 text-cyan-300 px-3 py-2 rounded flex-1 min-w-[220px] focus:outline-none focus:border-cyan-400">
+                        <input type="text" id="new-node-name" placeholder="Node Alias (e.g. Render US)" class="font-fira text-xs bg-slate-900 border border-slate-700 text-slate-200 px-3 py-2 rounded w-44 focus:outline-none focus:border-cyan-400">
+                        <button type="button" onclick="registerNewMeshNode()" class="font-chakra text-xs py-2 px-4 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded transition font-bold uppercase">
+                            ADD TO MESH
+                        </button>
+                    </div>
                 </div>
+
+                <!-- Ranked Mesh Nodes Table -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-space text-xs font-semibold text-slate-300 uppercase">Configured Server Links &amp; Live Rankings</h4>
+                        <button onclick="reloadMeshTopology()" class="font-chakra text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded transition">
+                            PROBE NOW
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left font-jetbrains text-xs">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-400 uppercase font-space text-[11px]">
+                                    <th class="py-2.5 px-3">Rank</th>
+                                    <th class="py-2.5 px-3">Server Link</th>
+                                    <th class="py-2.5 px-3">EWMA Latency</th>
+                                    <th class="py-2.5 px-3">Queue Backlog</th>
+                                    <th class="py-2.5 px-3">Route Score</th>
+                                    <th class="py-2.5 px-3">Health</th>
+                                    <th class="py-2.5 px-3 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mesh-nodes-tbody" class="divide-y divide-slate-800/60">
+                                <tr>
+                                    <td colspan="7" class="py-6 text-center text-slate-500 font-inter">
+                                        Probing registered Blast servers...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Explanation Box -->
+                <div class="p-3 bg-slate-950 border border-slate-800/80 rounded font-sharetech text-xs text-slate-400">
+                    [ROUTING FORMULA] Score = (EWMA_RTT_ms * 0.5) + (Queue_Depth * 10.0 * 0.5). Lowest score wins. Local execution has a 5ms affinity bonus to eliminate redundant hops. Loop-protected via X-Blast-Hop-Count.
+                </div>
+
             </div>
         </div>
 
@@ -747,25 +810,105 @@
             }
         }
 
-        async function reloadClusterGrid() {
+        async function reloadMeshTopology() {
             const host = getActiveHost();
-            const grid = document.getElementById('cluster-nodes-grid');
+            const badge = document.getElementById('fastest-route-badge');
+            const tbody = document.getElementById('mesh-nodes-tbody');
             try {
-                const res = await fetch(`${host}/v1/cluster/nodes`);
+                const res = await fetch(`${host}/v1/mesh/routes`);
                 if (res.ok) {
                     const data = await res.json();
-                    grid.innerHTML = data.nodes.map(n => `
-                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg font-jetbrains text-xs">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="font-bold text-cyan-300 font-chakra">${n.node_id}</span>
-                                <span class="px-2 py-0.5 rounded text-[10px] ${n.role === 'local_node' ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/40' : 'bg-slate-800 text-slate-300'}">${n.role}</span>
-                            </div>
-                            <div class="text-slate-400 text-[11px]">${n.url}</div>
-                            <div class="text-slate-500 text-[10px] mt-2">Last Heartbeat: ${n.seconds_ago}s ago</div>
-                        </div>
-                    `).join('');
+                    badge.innerText = data.fastest_route ? data.fastest_route : "LOCAL";
+
+                    if (!data.nodes || data.nodes.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500 font-inter">No mesh nodes detected.</td></tr>`;
+                        return;
+                    }
+
+                    tbody.innerHTML = data.nodes.map(n => {
+                        const isWinner = n.rank === 1;
+                        const latColor = n.ewma_latency_ms < 50 ? "text-emerald-400" : (n.ewma_latency_ms < 150 ? "text-amber-400" : "text-rose-400");
+                        return `
+                            <tr class="hover:bg-slate-900/50 ${isWinner ? 'bg-cyan-950/20' : ''}">
+                                <td class="py-2.5 px-3">
+                                    <span class="px-2 py-0.5 rounded text-[11px] font-bold ${isWinner ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-slate-800 text-slate-400'}">
+                                        #${n.rank} ${isWinner ? 'FASTEST' : ''}
+                                    </span>
+                                </td>
+                                <td class="py-2.5 px-3">
+                                    <span class="font-bold text-white">${n.name}</span>
+                                    <div class="text-[11px] text-slate-400 font-fira">${n.url} ${n.is_local ? '(Local)' : ''}</div>
+                                </td>
+                                <td class="py-2.5 px-3 ${latColor} font-bold">${n.ewma_latency_ms} ms</td>
+                                <td class="py-2.5 px-3 text-slate-300">${n.queue_depth} jobs</td>
+                                <td class="py-2.5 px-3 text-cyan-300 font-mono">${n.composite_score !== null ? n.composite_score : 'INF'}</td>
+                                <td class="py-2.5 px-3">
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] ${n.is_healthy ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30' : 'bg-rose-950 text-rose-300 border border-rose-500/30'}">
+                                        ${n.is_healthy ? 'ONLINE' : 'OFFLINE'}
+                                    </span>
+                                </td>
+                                <td class="py-2.5 px-3 text-right">
+                                    ${!n.is_local ? `
+                                        <button onclick="removeMeshNode('${n.url}')" class="px-2 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded text-[10px] font-chakra">
+                                            REMOVE
+                                        </button>
+                                    ` : '<span class="text-slate-600 text-[10px] font-mono">PRIMARY</span>'}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
                 }
             } catch (e) {}
+        }
+
+        async function registerNewMeshNode() {
+            const host = getActiveHost();
+            const urlInput = document.getElementById('new-node-url');
+            const nameInput = document.getElementById('new-node-name');
+            const url = urlInput.value.trim();
+            const name = nameInput.value.trim();
+
+            if (!url) {
+                alert('Please enter a valid Blast server link URL');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${host}/v1/mesh/nodes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url, name: name })
+                });
+                if (res.ok) {
+                    urlInput.value = '';
+                    nameInput.value = '';
+                    reloadMeshTopology();
+                } else {
+                    const err = await res.json();
+                    alert('Registration failed: ' + (err.error || res.statusText));
+                }
+            } catch (e) {
+                alert('Network error registering node: ' + e.message);
+            }
+        }
+
+        async function removeMeshNode(url) {
+            const host = getActiveHost();
+            if (!confirm(`Remove server link ${url} from mesh?`)) return;
+            try {
+                const res = await fetch(`${host}/v1/mesh/nodes`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+                if (res.ok) {
+                    reloadMeshTopology();
+                }
+            } catch (e) {}
+        }
+
+        async function reloadClusterGrid() {
+            reloadMeshTopology();
         }
 
         // Initialize and start background heartbeat

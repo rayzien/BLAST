@@ -297,3 +297,12 @@ class SQLiteQueueStorage:
             "dead_letter": dlq_count,
             "total_jobs": sum(counts.values()),
         }
+
+    def close(self):
+        """Close thread-local SQLite connection if active."""
+        if hasattr(self._local, "conn") and self._local.conn is not None:
+            try:
+                self._local.conn.close()
+            except Exception:
+                pass
+            self._local.conn = None
