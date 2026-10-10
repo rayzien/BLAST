@@ -105,7 +105,7 @@ class BlastConfig:
     
     # Public URL for multi-Render deployments (Render automatically supplies RENDER_EXTERNAL_URL)
     HOST: str = os.getenv("BLAST_HOST", "0.0.0.0")
-    PORT: int = int(os.getenv("BLAST_PORT", "8080"))
+    PORT: int = int(os.getenv("BLAST_PORT", os.getenv("PORT", "8080")))
     PUBLIC_URL: str = os.getenv("BLAST_PUBLIC_URL", os.getenv("RENDER_EXTERNAL_URL", "")).rstrip("/")
 
     def __post_init__(self):
