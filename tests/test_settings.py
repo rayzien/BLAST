@@ -53,7 +53,7 @@ class TestPersistenceManager(unittest.TestCase):
         self.assertEqual(settings["blast_api_key_2"], "test-key-2")
         self.assertEqual(settings["blast_cluster_secrets"], ["cluster-common-secret-xyz"])
         self.assertEqual(settings["supabase_url"], "https://initial-project.supabase.co")
-        self.assertEqual(settings["supabase_anon_key"], "initial-anon-key-123")
+        self.assertEqual(settings["supabase_anon_key"], "sb_publishable_initial-anon-key-123")
 
     def test_save_and_persist_settings_to_env_and_json(self):
         payload = {
@@ -61,7 +61,7 @@ class TestPersistenceManager(unittest.TestCase):
             "blast_api_key_2": "new-client-key-dev",
             "blast_cluster_secrets": ["common-cluster-key-shared-999"],
             "supabase_url": "https://updated-project.supabase.co",
-            "supabase_anon_key": "updated-anon-456",
+            "supabase_anon_key": "sb_publishable_updated-anon-456",
             "supabase_service_role_key": "service-secret-789",
             "max_workers": 8,
             "rate_limit_rps": 50.0,
@@ -105,7 +105,7 @@ class TestPersistenceManager(unittest.TestCase):
         with open(custom_json_path, "w", encoding="utf-8") as f:
             json.dump({
                 "supabase_url": "https://restored-after-crash.supabase.co",
-                "supabase_anon_key": "restored-anon-key",
+                "supabase_anon_key": "sb_publishable_restored-anon-key",
                 "blast_api_key_1": "restored-client-key",
                 "blast_cluster_secrets": ["restored-cluster-secret"]
             }, f)
@@ -124,7 +124,7 @@ class TestPersistenceManager(unittest.TestCase):
         )
         data = mgr.get_settings()
         self.assertEqual(data["supabase_url"], "https://restored-after-crash.supabase.co")
-        self.assertEqual(data["supabase_anon_key"], "restored-anon-key")
+        self.assertEqual(data["supabase_anon_key"], "sb_publishable_restored-anon-key")
         self.assertEqual(data["blast_api_key_1"], "restored-client-key")
         self.assertEqual(data["blast_cluster_secrets"], ["restored-cluster-secret"])
         self.assertTrue(data["has_settings_json"])
@@ -158,7 +158,7 @@ class TestSettingsServerEndpoints(unittest.TestCase):
             CLUSTER_SECRETS=["cluster-mesh-shared-300"],
             CLUSTER_SECRET="",
             SUPABASE_URL="https://endpoint-test.supabase.co",
-            SUPABASE_ANON_KEY="anon-test-key",
+            SUPABASE_ANON_KEY="sb_publishable_anon-test-key",
             DB_PATH=self.db_path,
         )
         self.app = create_app(cfg=self.cfg)
@@ -191,7 +191,7 @@ class TestSettingsServerEndpoints(unittest.TestCase):
             "blast_api_key_2": "new-secondary-2",
             "blast_cluster_secrets": ["common-cluster-mesh-3"],
             "supabase_url": "https://new-live-instance.supabase.co",
-            "supabase_anon_key": "new-live-anon",
+            "supabase_anon_key": "sb_publishable_new-live-anon",
             "supabase_service_role_key": "new-live-service",
             "max_workers": 6,
         }

@@ -247,6 +247,9 @@ class BlastConfig:
         elif self.CLUSTER_SECRET and self.CLUSTER_SECRET not in self.API_KEYS:
             self.API_KEYS.append(self.CLUSTER_SECRET)
 
+        if self.SUPABASE_ANON_KEY and not self.SUPABASE_ANON_KEY.startswith("sb_"):
+            self.SUPABASE_ANON_KEY = f"sb_publishable_{self.SUPABASE_ANON_KEY}"
+
     PEER_URLS: List[str] = field(default_factory=_get_combined_peers)
     SERVER_LINKS: List[str] = field(default_factory=_get_combined_peers)
     CLUSTER_HEARTBEAT_INTERVAL: float = float(os.getenv("BLAST_CLUSTER_HEARTBEAT_INTERVAL", "15.0"))
