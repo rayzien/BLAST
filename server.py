@@ -50,6 +50,14 @@ def create_app(
     if not getattr(cfg, "TESTING", False) and os.getenv("BLAST_TESTING") != "true":
         smart_mesh.start()
 
+    def _on_peer_discovered(peer_url: str, peer_nid: str):
+        smart_mesh.add_node(peer_url, name=peer_nid)
+        if peer_url not in cfg.PEER_URLS:
+            cfg.PEER_URLS.append(peer_url)
+        if peer_url not in cfg.SERVER_LINKS:
+            cfg.SERVER_LINKS.append(peer_url)
+    cluster_mgr.on_peer_discovered = _on_peer_discovered
+
     # Initialize 24/7 Anti-Sleep Awake Engine
     awake = awake_engine or AwakeEngine(cfg)
     if cfg.AWAKE_ENABLED and not getattr(cfg, "TESTING", False) and os.getenv("BLAST_TESTING") != "true":
@@ -62,6 +70,7 @@ def create_app(
         supabase_client=supabase_client,
         cluster_manager=cluster_mgr,
         awake_engine=awake,
+        mesh_router=smart_mesh,
     )
 
     # Attach components to app context
@@ -79,6 +88,15 @@ def create_app(
     # -------------------------------------------------------------
     @app.before_request
     def security_check():
+        # Handle CORS preflight requests
+        if request.method == "OPTIONS":
+            resp = Response(status=200)
+            resp.headers["Access-Control-Allow-Origin"] = "*"
+            resp.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+            resp.headers["Access-Control-Allow-Headers"] = "Content-Type, X-Blast-Key, X-Idempotency-Key, X-Priority, Authorization"
+            resp.headers["Access-Control-Max-Age"] = "86400"
+            return resp
+
         # Public endpoints (health check, web GUI in pages/, cluster/mesh heartbeats, live logs, test pathway, settings, awake engine)
         if request.path in ("/health", "/", "/gui", "/v1/test/pathway", "/v1/settings", "/v1/awake", "/awake") or request.path.startswith(("/v1/cluster/heartbeat", "/pages", "/v1/logs", "/v1/settings", "/v1/awake")):
             return None
@@ -119,6 +137,13 @@ def create_app(
 
         return None
 
+    @app.after_request
+    def add_cors_headers(response):
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-Blast-Key, X-Idempotency-Key, X-Priority, Authorization"
+        return response
+
     # -------------------------------------------------------------
     # Web GUI Endpoints (Serving from pages/ folder)
     # -------------------------------------------------------------
@@ -147,14 +172,37 @@ def create_app(
     @app.route("/health", methods=["GET"])
     def health():
         sup: Optional[WorkerSupervisor] = app.config.get("BLAST_SUPERVISOR")
+        qm: Optional[QueueManager] = app.config.get("BLAST_QUEUE_MANAGER")
+        q_depth = 0
+        if qm:
+            st = qm.get_stats()
+            q_depth = st.get("pending", 0) + st.get("processing", 0)
+
+        # If incoming request is a peer awake ping carrying sender URL, auto-discover sender
+        sender_url = request.headers.get("X-Blast-Sender-Url")
+        if sender_url and sender_url.strip().startswith(("http://", "https://")):
+            clean_sender = sender_url.strip().rstrip("/")
+            local_urls = {
+                cfg.PUBLIC_URL.rstrip("/"),
+                f"http://{cfg.HOST}:{cfg.PORT}".rstrip("/"),
+                f"http://127.0.0.1:{cfg.PORT}".rstrip("/"),
+                f"http://localhost:{cfg.PORT}".rstrip("/"),
+            }
+            if clean_sender not in local_urls:
+                cluster_mgr.add_peer(clean_sender)
+                smart_mesh.add_node(clean_sender)
+
         return jsonify({
             "status": "healthy",
             "service": "blast",
             "node_id": cfg.NODE_ID,
+            "public_url": cfg.PUBLIC_URL,
+            "common_key": getattr(cfg, "CLUSTER_SECRET", "https://sas-the-treasure-grape-xr-prototype.onrender.com/"),
             "security_checker_active": True,
             "mesh_routing_enabled": cfg.MESH_ROUTING_ENABLED,
             "workers_running": sup.is_alive() if sup else False,
             "supabase_configured": bool(cfg.SUPABASE_URL),
+            "queue_depth": q_depth,
         })
 
     # -------------------------------------------------------------
@@ -310,7 +358,14 @@ def create_app(
         peer_url = data.get("url")
         if peer_id and peer_url:
             cluster_mgr.record_heartbeat(peer_id, peer_url, meta=data)
-            return jsonify({"status": "acknowledged", "node_id": cfg.NODE_ID}), 200
+            smart_mesh.add_node(peer_url, name=peer_id)
+            known = [p.url for p in cluster_mgr.peers.values()]
+            return jsonify({
+                "status": "acknowledged",
+                "node_id": cfg.NODE_ID,
+                "public_url": cfg.PUBLIC_URL,
+                "known_peers": known,
+            }), 200
         return jsonify({"error": "Missing node_id or url"}), 400
 
     @app.route("/v1/cluster/health", methods=["GET"])
