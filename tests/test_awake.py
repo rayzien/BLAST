@@ -55,6 +55,17 @@ class TestAwakeEngineUnit(unittest.TestCase):
         self.assertEqual(engine.total_rounds, 1)
         self.assertEqual(engine.successful_rounds, 1)
 
+        # Verify target-specific ping counts
+        self.assertEqual(engine.render_pings_total, 1)
+        self.assertEqual(engine.render_pings_success, 1)
+        self.assertEqual(engine.render_pings_failed, 0)
+        self.assertEqual(engine.supabase_pings_total, 1)
+        self.assertEqual(engine.supabase_pings_success, 1)
+        self.assertEqual(engine.supabase_pings_failed, 0)
+        self.assertEqual(engine.peer_pings_total, len(result["results"]["peers"]))
+        self.assertEqual(engine.peer_pings_success, len(result["results"]["peers"]))
+        self.assertEqual(engine.total_pings_sent, 2 + len(result["results"]["peers"]))
+
         # Verify calls
         calls = [c[0][0] for c in mock_client.get.call_args_list]
         self.assertIn("https://blast-render-app.onrender.com/health", calls)
@@ -83,6 +94,13 @@ class TestAwakeEngineUnit(unittest.TestCase):
         self.assertEqual(status["interval_seconds"], 300.0)
         self.assertIn("uptime_seconds", status)
         self.assertIn("targets_configured", status)
+        self.assertIn("ping_counts", status)
+        self.assertIn("render", status["ping_counts"])
+        self.assertIn("supabase", status["ping_counts"])
+        self.assertIn("peers", status["ping_counts"])
+        self.assertEqual(status["render_pings_total"], 0)
+        self.assertEqual(status["supabase_pings_total"], 0)
+        self.assertEqual(status["total_pings_sent"], 0)
         engine.close()
 
     def test_update_config_dynamically(self):
@@ -130,6 +148,9 @@ class TestAwakeEngineEndpoints(unittest.TestCase):
         data = resp.get_json()
         self.assertIn("status", data)
         self.assertIn("interval_seconds", data)
+        self.assertIn("ping_counts", data)
+        self.assertIn("render_pings_total", data)
+        self.assertIn("supabase_pings_total", data)
 
     def test_trigger_awake_ping_endpoint(self):
         resp = self.client.post("/v1/awake/trigger")
@@ -138,6 +159,9 @@ class TestAwakeEngineEndpoints(unittest.TestCase):
         self.assertEqual(data["status"], "success")
         self.assertIn("data", data)
         self.assertEqual(self.awake_engine.total_rounds, 1)
+        self.assertGreaterEqual(self.awake_engine.render_pings_total, 1)
+        self.assertGreaterEqual(self.awake_engine.supabase_pings_total, 1)
+        self.assertGreaterEqual(self.awake_engine.total_pings_sent, 2)
 
     def test_update_awake_config_endpoint(self):
         payload = {"enabled": True, "interval_seconds": 450}

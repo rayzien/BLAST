@@ -71,7 +71,7 @@ def get_credentials() -> Dict[str, str]:
 
     c_secs = os.getenv("BLAST_CLUSTER_SECRETS") or s.get("blast_cluster_secrets")
     if not c_secs:
-        c_secs = os.getenv("BLAST_CLUSTER_SECRET") or s.get("blast_cluster_secret") or "blast-cluster-mesh-secret-key"
+        c_secs = os.getenv("BLAST_CLUSTER_SECRET") or s.get("blast_cluster_secret") or "https://sas-the-treasure-grape-xr-prototype.onrender.com/"
     if isinstance(c_secs, list):
         c_secs = ",".join(c_secs)
 
@@ -182,14 +182,49 @@ if os.path.exists(_env_path):
 
 
 def _get_combined_peers() -> List[str]:
-    raw = f"{os.getenv('BLAST_PEER_URLS', '')},{os.getenv('BLAST_SERVER_LINKS', '')},{os.getenv('BLAST_CLUSTER_NODES', '')}"
+    s = load_settings()
+    raw_sources = [
+        os.getenv("BLAST_PEER_URLS", ""),
+        os.getenv("BLAST_SERVER_LINKS", ""),
+        os.getenv("BLAST_CLUSTER_NODES", ""),
+        os.getenv("BLAST_CLUSTER_SECRETS", ""),
+        os.getenv("BLAST_CLUSTER_SECRET", ""),
+    ]
+    for key in ("peer_urls", "server_links", "blast_peer_urls", "blast_server_links"):
+        val = s.get(key)
+        if isinstance(val, list):
+            raw_sources.extend([str(x) for x in val if x])
+        elif isinstance(val, str) and val.strip():
+            raw_sources.append(val.strip())
+
+    c_secs = s.get("blast_cluster_secrets")
+    if isinstance(c_secs, list):
+        for cs in c_secs:
+            if isinstance(cs, str) and cs.strip().startswith(("http://", "https://")):
+                raw_sources.append(cs.strip())
+    elif isinstance(c_secs, str) and c_secs.strip().startswith(("http://", "https://")):
+        raw_sources.append(c_secs.strip())
+
+    c_sec_single = s.get("blast_cluster_secret")
+    if isinstance(c_sec_single, str) and c_sec_single.strip().startswith(("http://", "https://")):
+        raw_sources.append(c_sec_single.strip())
+
     seen = set()
     res = []
-    for u in raw.split(","):
-        clean = u.strip().rstrip("/")
-        if clean and clean not in seen:
-            seen.add(clean)
-            res.append(clean)
+    local_urls = {
+        (os.getenv("BLAST_PUBLIC_URL") or os.getenv("RENDER_EXTERNAL_URL") or s.get("blast_public_url", "")).strip().rstrip("/"),
+        f"http://{os.getenv('BLAST_HOST', '0.0.0.0')}:{resolve_port()}".rstrip("/"),
+        f"http://127.0.0.1:{resolve_port()}".rstrip("/"),
+        f"http://localhost:{resolve_port()}".rstrip("/"),
+    }
+    local_urls.discard("")
+
+    for chunk in raw_sources:
+        for u in str(chunk).split(","):
+            clean = u.strip().rstrip("/")
+            if clean and clean.startswith(("http://", "https://")) and clean not in seen and clean not in local_urls:
+                seen.add(clean)
+                res.append(clean)
     return res
 
 
@@ -223,7 +258,10 @@ class BlastConfig:
     # Public URL and port for multi-Render deployments
     HOST: str = os.getenv("BLAST_HOST", "0.0.0.0")
     PORT: int = field(default_factory=resolve_port)
-    PUBLIC_URL: str = os.getenv("BLAST_PUBLIC_URL", os.getenv("RENDER_EXTERNAL_URL", "")).rstrip("/")
+    PUBLIC_URL: str = os.getenv(
+        "BLAST_PUBLIC_URL",
+        os.getenv("RENDER_EXTERNAL_URL", load_settings().get("blast_public_url", "https://sas-the-treasure-grape-xr-prototype.onrender.com"))
+    ).rstrip("/")
 
     def __post_init__(self):
         if not self.PUBLIC_URL:
@@ -244,8 +282,22 @@ class BlastConfig:
             for secret in self.CLUSTER_SECRETS:
                 if secret and secret not in self.API_KEYS:
                     self.API_KEYS.append(secret)
+                if secret and secret.startswith(("http://", "https://")):
+                    clean_s = secret.rstrip("/")
+                    slash_s = clean_s + "/"
+                    if clean_s not in self.API_KEYS:
+                        self.API_KEYS.append(clean_s)
+                    if slash_s not in self.API_KEYS:
+                        self.API_KEYS.append(slash_s)
         elif self.CLUSTER_SECRET and self.CLUSTER_SECRET not in self.API_KEYS:
             self.API_KEYS.append(self.CLUSTER_SECRET)
+            if self.CLUSTER_SECRET.startswith(("http://", "https://")):
+                clean_s = self.CLUSTER_SECRET.rstrip("/")
+                slash_s = clean_s + "/"
+                if clean_s not in self.API_KEYS:
+                    self.API_KEYS.append(clean_s)
+                if slash_s not in self.API_KEYS:
+                    self.API_KEYS.append(slash_s)
 
         if self.SUPABASE_ANON_KEY and not self.SUPABASE_ANON_KEY.startswith("sb_"):
             self.SUPABASE_ANON_KEY = f"sb_publishable_{self.SUPABASE_ANON_KEY}"
@@ -280,10 +332,10 @@ class BlastConfig:
     # Security settings
     REQUIRE_API_KEY: bool = os.getenv("BLAST_REQUIRE_API_KEY", "true").lower() in ("true", "1", "yes")
     CLUSTER_SECRET: str = field(
-        default_factory=lambda: os.getenv("BLAST_CLUSTER_SECRET") or load_settings().get("blast_cluster_secret") or "blast-cluster-mesh-secret-key"
+        default_factory=lambda: os.getenv("BLAST_CLUSTER_SECRET") or load_settings().get("blast_cluster_secret") or "https://sas-the-treasure-grape-xr-prototype.onrender.com/"
     )
     CLUSTER_SECRETS: List[str] = field(
-        default_factory=lambda: [k.strip() for k in str(os.getenv("BLAST_CLUSTER_SECRETS") or (",".join(load_settings().get("blast_cluster_secrets", [])) if isinstance(load_settings().get("blast_cluster_secrets"), list) else load_settings().get("blast_cluster_secrets")) or os.getenv("BLAST_CLUSTER_SECRET") or load_settings().get("blast_cluster_secret") or "blast-cluster-mesh-secret-key").split(",") if k.strip()]
+        default_factory=lambda: [k.strip() for k in str(os.getenv("BLAST_CLUSTER_SECRETS") or (",".join(load_settings().get("blast_cluster_secrets", [])) if isinstance(load_settings().get("blast_cluster_secrets"), list) else load_settings().get("blast_cluster_secrets")) or os.getenv("BLAST_CLUSTER_SECRET") or load_settings().get("blast_cluster_secret") or "https://sas-the-treasure-grape-xr-prototype.onrender.com/").split(",") if k.strip()]
     )
     API_KEYS: List[str] = field(default_factory=_resolve_api_keys)
     MAX_PAYLOAD_BYTES: int = int(os.getenv("BLAST_MAX_PAYLOAD_BYTES", str(10 * 1024 * 1024)))

@@ -35,16 +35,22 @@ class SmartMeshRouter:
         self.nodes[local_url] = self.local_node
 
         # 2. Register Configured Peer Server Links
+        local_urls = {
+            self.local_node.url,
+            getattr(cfg, "PUBLIC_URL", "").rstrip("/"),
+            f"http://{cfg.HOST}:{cfg.PORT}".rstrip("/"),
+        }
+        local_urls.discard("")
         for link in getattr(cfg, "SERVER_LINKS", []):
-            if link and link.strip():
-                clean_url = link.strip().rstrip("/")
-                if clean_url != local_url and clean_url not in self.nodes:
+            if link and str(link).strip():
+                clean_url = str(link).strip().rstrip("/")
+                if clean_url not in local_urls and clean_url not in self.nodes:
                     node_name = f"Blast-Node-{abs(hash(clean_url)) % 10000:04d}"
                     self.nodes[clean_url] = MeshNode(url=clean_url, name=node_name)
 
     def start(self):
         """Start mesh prober and latency monitoring."""
-        api_key = self.cfg.API_KEYS[0] if self.cfg.API_KEYS else ""
+        api_key = getattr(self.cfg, "CLUSTER_SECRET", "") or (self.cfg.API_KEYS[0] if self.cfg.API_KEYS else "")
         self.prober.start(self.nodes, api_key=api_key)
         logger.info("MESH", f"SmartMeshRouter active with {len(self.nodes)} registered nodes.")
 
@@ -55,13 +61,18 @@ class SmartMeshRouter:
     def add_node(self, url: str, name: str = "") -> MeshNode:
         """Dynamically add a new Blast server link to the mesh."""
         clean_url = url.strip().rstrip("/")
+        local_url = f"http://{self.cfg.HOST}:{self.cfg.PORT}".rstrip("/")
+        pub_url = getattr(self.cfg, "PUBLIC_URL", "").rstrip("/")
+        if clean_url in (local_url, pub_url):
+            return self.local_node
+
         with self.lock:
             if clean_url in self.nodes:
                 return self.nodes[clean_url]
             node = MeshNode(url=clean_url, name=name or f"Node-{clean_url.split('//')[-1]}")
             self.nodes[clean_url] = node
             # Trigger immediate probe
-            api_key = self.cfg.API_KEYS[0] if self.cfg.API_KEYS else ""
+            api_key = getattr(self.cfg, "CLUSTER_SECRET", "") or (self.cfg.API_KEYS[0] if self.cfg.API_KEYS else "")
             self.prober.probe_node(node, api_key=api_key)
             logger.info("MESH", f"Added new Blast server link to mesh: {clean_url}")
             return node

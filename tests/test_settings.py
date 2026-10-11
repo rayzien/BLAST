@@ -168,6 +168,8 @@ class TestSettingsServerEndpoints(unittest.TestCase):
         self.client = self.app.test_client()
 
     def tearDown(self):
+        if "BLAST_AWAKE_ENGINE" in self.app.config and self.app.config["BLAST_AWAKE_ENGINE"]:
+            self.app.config["BLAST_AWAKE_ENGINE"].stop()
         if "BLAST_MESH_ROUTER" in self.app.config and self.app.config["BLAST_MESH_ROUTER"]:
             self.app.config["BLAST_MESH_ROUTER"].stop()
         if "BLAST_CLUSTER_MANAGER" in self.app.config and self.app.config["BLAST_CLUSTER_MANAGER"]:
@@ -276,5 +278,125 @@ class TestUniversalSettingsAndPort(unittest.TestCase):
         client.close()
 
 
+class TestUrlCommonKeyAndMultiLinkMesh(unittest.TestCase):
+    def setUp(self):
+        self.tmp_dir = tempfile.TemporaryDirectory()
+        self.env_path = os.path.join(self.tmp_dir.name, ".env.test")
+        self.settings_json_path = os.path.join(self.tmp_dir.name, "settings.json")
+        self.cfg = BlastConfig(
+            API_KEYS=["client-key-1"],
+            CLUSTER_SECRETS=["https://sas-the-treasure-grape-xr-prototype.onrender.com/"],
+            PUBLIC_URL="https://sas-the-treasure-grape-xr-prototype.onrender.com",
+            SUPABASE_URL="https://test.supabase.co",
+            SUPABASE_ANON_KEY="anon-key",
+        )
+        self.authenticator = Authenticator(self.cfg)
+        self.cluster_mgr = ClusterManager(self.cfg)
+        from mesh.router import SmartMeshRouter
+        self.mesh_router = SmartMeshRouter(self.cfg)
+        from awake.engine import AwakeEngine
+        self.awake_engine = AwakeEngine(self.cfg)
+        self.manager = PersistenceManager(
+            cfg=self.cfg,
+            env_path=self.env_path,
+            settings_json_path=self.settings_json_path,
+            authenticator=self.authenticator,
+            cluster_manager=self.cluster_mgr,
+            awake_engine=self.awake_engine,
+            mesh_router=self.mesh_router,
+        )
+
+    def tearDown(self):
+        self.cluster_mgr.stop()
+        self.mesh_router.stop()
+        self.awake_engine.stop()
+        self.tmp_dir.cleanup()
+
+    def test_default_cluster_secret_is_own_url(self):
+        settings = self.manager.get_settings()
+        self.assertIn("https://sas-the-treasure-grape-xr-prototype.onrender.com/", settings["blast_cluster_secrets"])
+
+    def test_auth_with_url_key_both_slash_and_non_slash(self):
+        # 1. With trailing slash
+        auth_ok1, cid1, _ = self.authenticator.authenticate({
+            "X-Blast-Key": "https://sas-the-treasure-grape-xr-prototype.onrender.com/"
+        })
+        self.assertTrue(auth_ok1)
+
+        # 2. Without trailing slash
+        auth_ok2, cid2, _ = self.authenticator.authenticate({
+            "X-Blast-Key": "https://sas-the-treasure-grape-xr-prototype.onrender.com"
+        })
+        self.assertTrue(auth_ok2)
+
+        # 3. Via X-Blast-Cluster-Secret
+        auth_ok3, cid3, _ = self.authenticator.authenticate({
+            "X-Blast-Cluster-Secret": "https://sas-the-treasure-grape-xr-prototype.onrender.com"
+        })
+        self.assertTrue(auth_ok3)
+
+    def test_multi_url_pasting_registers_peers_and_mesh_nodes(self):
+        payload = {
+            "blast_api_key_1": "client-key-1",
+            "blast_cluster_secrets": [
+                "https://sas-the-treasure-grape-xr-prototype.onrender.com/",
+                "https://second-node.onrender.com",
+                "https://third-node.onrender.com/",
+            ],
+            "supabase_url": "https://test.supabase.co",
+        }
+        res = self.manager.save_settings(payload)
+        self.assertEqual(len(res["blast_cluster_secrets"]), 3)
+
+        # Remote peers must be registered in ClusterManager
+        peer_urls = [p.url for p in self.cluster_mgr.peers.values()]
+        self.assertIn("https://second-node.onrender.com", peer_urls)
+        self.assertIn("https://third-node.onrender.com", peer_urls)
+        # Own URL must not be in remote peers
+        self.assertNotIn("https://sas-the-treasure-grape-xr-prototype.onrender.com", peer_urls)
+
+        # Remote peers must be registered in SmartMeshRouter
+        mesh_urls = list(self.mesh_router.nodes.keys())
+        self.assertIn("https://second-node.onrender.com", mesh_urls)
+        self.assertIn("https://third-node.onrender.com", mesh_urls)
+
+    def test_multiline_and_comma_separated_string_parsing(self):
+        payload = {
+            "blast_api_key_1": "client-key-1",
+            "blast_cluster_secrets": [
+                "https://node-a.onrender.com, https://node-b.onrender.com\nhttps://node-c.onrender.com"
+            ],
+            "supabase_url": "https://test.supabase.co",
+        }
+        res = self.manager.save_settings(payload)
+        secrets = res["blast_cluster_secrets"]
+        self.assertIn("https://node-a.onrender.com", secrets)
+        self.assertIn("https://node-b.onrender.com", secrets)
+        self.assertIn("https://node-c.onrender.com", secrets)
+
+    def test_health_endpoint_sender_auto_discovery(self):
+        app = create_app(cfg=self.cfg)
+        client = app.test_client()
+
+        # Send keep-alive health check probe from a remote peer
+        resp = client.get("/health", headers={
+            "X-Blast-Sender-Url": "https://auto-discovered-peer.onrender.com"
+        })
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertEqual(data["status"], "healthy")
+        self.assertIn("common_key", data)
+        self.assertEqual(data["public_url"], "https://sas-the-treasure-grape-xr-prototype.onrender.com")
+
+        # Verify auto-discovered peer is registered
+        cm = app.config["BLAST_CLUSTER_MANAGER"]
+        peer_urls = [p.url for p in cm.peers.values()]
+        self.assertIn("https://auto-discovered-peer.onrender.com", peer_urls)
+
+        if "BLAST_AWAKE_ENGINE" in app.config and app.config["BLAST_AWAKE_ENGINE"]:
+            app.config["BLAST_AWAKE_ENGINE"].stop()
+
+
 if __name__ == "__main__":
     unittest.main()
+

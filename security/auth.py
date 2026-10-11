@@ -11,16 +11,31 @@ class Authenticator:
     def __init__(self, cfg: BlastConfig):
         self.cfg = cfg
         # Store valid keys in a set for O(1) lookup
-        self.valid_keys = set(cfg.API_KEYS)
+        self.valid_keys = self._build_valid_keys_set(cfg.API_KEYS)
+
+    def _build_valid_keys_set(self, keys_iterable) -> set:
+        res = set()
+        for k in keys_iterable:
+            if not k:
+                continue
+            k_str = str(k).strip()
+            if not k_str:
+                continue
+            res.add(k_str)
+            if k_str.startswith(("http://", "https://")):
+                clean_url = k_str.rstrip("/")
+                res.add(clean_url)
+                res.add(clean_url + "/")
+        return res
 
     def update_keys(self, new_keys):
         """Hot-reload valid keys dynamically."""
-        self.valid_keys = set(new_keys)
+        self.valid_keys = self._build_valid_keys_set(new_keys)
 
     def extract_api_key(self, headers: dict, query_params: Optional[dict] = None) -> Optional[str]:
         """Extract API key from headers or query parameters."""
         # Check standard custom header
-        key = headers.get("x-blast-key") or headers.get("X-Blast-Key")
+        key = headers.get("x-blast-key") or headers.get("X-Blast-Key") or headers.get("x-blast-cluster-secret") or headers.get("X-Blast-Cluster-Secret")
         if key:
             return key.strip()
 
@@ -57,5 +72,14 @@ class Authenticator:
                 # Derive a safe client ID from key prefix
                 client_id = f"client-{provided_key[:8]}"
                 return True, client_id, None
+
+        # If provided key is a URL, also check normalized versions
+        if provided_key.startswith(("http://", "https://")):
+            norm = provided_key.rstrip("/")
+            norm_slash = norm + "/"
+            for valid_key in self.valid_keys:
+                if hmac.compare_digest(norm, valid_key) or hmac.compare_digest(norm_slash, valid_key):
+                    client_id = f"client-{norm[:8]}"
+                    return True, client_id, None
 
         return False, None, "Invalid API key provided."

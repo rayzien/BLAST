@@ -50,6 +50,22 @@ class AwakeEngine:
         self.total_rounds: int = 0
         self.successful_rounds: int = 0
         self.failed_rounds: int = 0
+
+        # Dedicated Keep-Alive Ping Counters
+        self.render_pings_total: int = 0
+        self.render_pings_success: int = 0
+        self.render_pings_failed: int = 0
+
+        self.supabase_pings_total: int = 0
+        self.supabase_pings_success: int = 0
+        self.supabase_pings_failed: int = 0
+
+        self.peer_pings_total: int = 0
+        self.peer_pings_success: int = 0
+        self.peer_pings_failed: int = 0
+
+        self.total_pings_sent: int = 0
+
         self.targets_status: Dict[str, Dict[str, Any]] = {}
         self.history: List[Dict[str, Any]] = []
         self._max_history: int = 30
@@ -92,8 +108,8 @@ class AwakeEngine:
 
     def _run_loop(self):
         """Main loop executing keep-alive rounds at interval."""
-        # Initial probe delay: allow server to fully bind and warm up before first keep-alive cycle
-        initial_delay = min(60.0, self.interval_seconds)
+        # Initial probe delay: allow server to quickly bind then execute first keep-alive cycle
+        initial_delay = min(2.0, self.interval_seconds)
         elapsed = 0.0
         while elapsed < initial_delay and not self._stop_event.is_set():
             time.sleep(1.0)
@@ -184,11 +200,18 @@ class AwakeEngine:
         ).rstrip("/")
 
         target_url = f"{public_url}/health"
+        self.render_pings_total += 1
+        self.total_pings_sent += 1
         start = time.time()
         try:
             resp = self._client.get(target_url, headers={"X-Blast-Awake": "true"})
             latency_ms = round((time.time() - start) * 1000.0, 2)
             is_ok = 200 <= resp.status_code < 400
+            if is_ok:
+                self.render_pings_success += 1
+            else:
+                self.render_pings_failed += 1
+
             res = {
                 "target": "render_self",
                 "url": target_url,
@@ -200,6 +223,7 @@ class AwakeEngine:
             self.targets_status["render_self"] = res
             return res
         except Exception as exc:
+            self.render_pings_failed += 1
             latency_ms = round((time.time() - start) * 1000.0, 2)
             res = {
                 "target": "render_self",
@@ -229,7 +253,7 @@ class AwakeEngine:
                 "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             }
 
-        # Probe the health endpoint; if not available, fallback to REST root
+        # Probe the health endpoint; touch Supabase infrastructure to keep Postgres and Auth warm
         target_url = f"{base_url}/auth/v1/health"
         headers = {
             "apikey": anon_key,
@@ -237,11 +261,19 @@ class AwakeEngine:
             "X-Blast-Awake": "true",
         }
 
+        self.supabase_pings_total += 1
+        self.total_pings_sent += 1
         start = time.time()
         try:
             resp = self._client.get(target_url, headers=headers)
             latency_ms = round((time.time() - start) * 1000.0, 2)
-            is_ok = 200 <= resp.status_code < 400
+            # Both 2xx/3xx and 401 confirm the upstream Supabase project responded actively
+            is_ok = (200 <= resp.status_code < 400) or (resp.status_code == 401)
+            if is_ok:
+                self.supabase_pings_success += 1
+            else:
+                self.supabase_pings_failed += 1
+
             res = {
                 "target": "supabase",
                 "url": target_url,
@@ -253,6 +285,7 @@ class AwakeEngine:
             self.targets_status["supabase"] = res
             return res
         except Exception as exc:
+            self.supabase_pings_failed += 1
             latency_ms = round((time.time() - start) * 1000.0, 2)
             res = {
                 "target": "supabase",
@@ -268,28 +301,58 @@ class AwakeEngine:
 
     def _ping_peers_target(self) -> List[Dict[str, Any]]:
         """Send keep-alive probe to each configured cluster peer server."""
-        raw_peers = getattr(self.cfg, "PEER_URLS", []) or getattr(self.cfg, "SERVER_LINKS", []) or []
-        cluster_secret = getattr(self.cfg, "CLUSTER_SECRET", "") or "blast-cluster-mesh-secret-key"
+        raw_peers = list(getattr(self.cfg, "PEER_URLS", []) or [])
+        for link in (getattr(self.cfg, "SERVER_LINKS", []) or []):
+            if link and link not in raw_peers:
+                raw_peers.append(link)
+        if hasattr(self.cfg, "CLUSTER_SECRETS"):
+            for cs in (self.cfg.CLUSTER_SECRETS or []):
+                if cs and str(cs).strip().startswith(("http://", "https://")) and str(cs).strip() not in raw_peers:
+                    raw_peers.append(str(cs).strip())
+
+        cluster_secret = getattr(self.cfg, "CLUSTER_SECRET", "") or "https://sas-the-treasure-grape-xr-prototype.onrender.com/"
         results: List[Dict[str, Any]] = []
+
+        local_urls = {
+            (getattr(self.cfg, "PUBLIC_URL", "") or "").rstrip("/"),
+            f"http://{getattr(self.cfg, 'HOST', '0.0.0.0')}:{getattr(self.cfg, 'PORT', 8080)}".rstrip("/"),
+            f"http://127.0.0.1:{getattr(self.cfg, 'PORT', 8080)}".rstrip("/"),
+            f"http://localhost:{getattr(self.cfg, 'PORT', 8080)}".rstrip("/"),
+        }
+        local_urls.discard("")
 
         seen = set()
         clean_peers = []
         for p in raw_peers:
             cleaned = str(p).strip().rstrip("/")
-            if cleaned and cleaned not in seen:
+            if cleaned and cleaned.startswith(("http://", "https://")) and cleaned not in seen and cleaned not in local_urls:
                 seen.add(cleaned)
                 clean_peers.append(cleaned)
 
+        sender_url = getattr(self.cfg, "PUBLIC_URL", "") or ""
+
         for peer_url in clean_peers:
             target_url = f"{peer_url}/health"
+            self.peer_pings_total += 1
+            self.total_pings_sent += 1
             start = time.time()
             try:
                 resp = self._client.get(
                     target_url,
-                    headers={"X-Blast-Key": cluster_secret, "X-Blast-Awake": "true"}
+                    headers={
+                        "X-Blast-Key": cluster_secret,
+                        "X-Blast-Awake": "true",
+                        "X-Blast-Sender-Url": sender_url,
+                    },
+                    timeout=4.0,
                 )
                 latency_ms = round((time.time() - start) * 1000.0, 2)
                 is_ok = 200 <= resp.status_code < 400
+                if is_ok:
+                    self.peer_pings_success += 1
+                else:
+                    self.peer_pings_failed += 1
+
                 peer_record = {
                     "peer": peer_url,
                     "url": target_url,
@@ -300,6 +363,7 @@ class AwakeEngine:
                 }
                 results.append(peer_record)
             except Exception as exc:
+                self.peer_pings_failed += 1
                 latency_ms = round((time.time() - start) * 1000.0, 2)
                 peer_record = {
                     "peer": peer_url,
@@ -345,6 +409,34 @@ class AwakeEngine:
                 "total_rounds": self.total_rounds,
                 "successful_rounds": self.successful_rounds,
                 "failed_rounds": self.failed_rounds,
+                "render_pings_total": self.render_pings_total,
+                "render_pings_success": self.render_pings_success,
+                "render_pings_failed": self.render_pings_failed,
+                "supabase_pings_total": self.supabase_pings_total,
+                "supabase_pings_success": self.supabase_pings_success,
+                "supabase_pings_failed": self.supabase_pings_failed,
+                "peer_pings_total": self.peer_pings_total,
+                "peer_pings_success": self.peer_pings_success,
+                "peer_pings_failed": self.peer_pings_failed,
+                "total_pings_sent": self.total_pings_sent,
+                "ping_counts": {
+                    "render": {
+                        "total": self.render_pings_total,
+                        "success": self.render_pings_success,
+                        "failed": self.render_pings_failed,
+                    },
+                    "supabase": {
+                        "total": self.supabase_pings_total,
+                        "success": self.supabase_pings_success,
+                        "failed": self.supabase_pings_failed,
+                    },
+                    "peers": {
+                        "total": self.peer_pings_total,
+                        "success": self.peer_pings_success,
+                        "failed": self.peer_pings_failed,
+                    },
+                    "total_sent": self.total_pings_sent,
+                },
                 "targets_configured": {
                     "ping_self": self.ping_self,
                     "ping_supabase": self.ping_supabase,

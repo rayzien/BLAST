@@ -26,6 +26,7 @@ class PersistenceManager:
         supabase_client: Optional[Any] = None,
         cluster_manager: Optional[Any] = None,
         awake_engine: Optional[Any] = None,
+        mesh_router: Optional[Any] = None,
     ):
         self.cfg = cfg or default_config
         self.env_path = env_path or os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
@@ -34,6 +35,7 @@ class PersistenceManager:
         self.supabase_client = supabase_client
         self.cluster_manager = cluster_manager
         self.awake_engine = awake_engine
+        self.mesh_router = mesh_router
         self._lock = threading.RLock()
 
     def get_settings(self) -> Dict[str, Any]:
@@ -82,7 +84,7 @@ class PersistenceManager:
             if not key1:
                 key1 = "blast-secret-key-1"
             if not cluster_secs:
-                cluster_secs = ["blast-cluster-mesh-secret-key"]
+                cluster_secs = ["https://sas-the-treasure-grape-xr-prototype.onrender.com/"]
 
             return {
                 # Three Key Architecture
@@ -135,16 +137,47 @@ class PersistenceManager:
             if not cluster_secrets_raw:
                 cluster_secrets_raw = getattr(self.cfg, "CLUSTER_SECRETS", [])
                 if not cluster_secrets_raw:
-                    cluster_secrets_raw = [getattr(self.cfg, "CLUSTER_SECRET", "blast-cluster-mesh-secret-key")]
+                    cluster_secrets_raw = [getattr(self.cfg, "CLUSTER_SECRET", "https://sas-the-treasure-grape-xr-prototype.onrender.com/")]
 
-            cluster_secrets = [str(k).strip() for k in cluster_secrets_raw if str(k).strip()]
+            cluster_secrets: List[str] = []
+            for k in cluster_secrets_raw:
+                if isinstance(k, str):
+                    for part in re.split(r"[\s,]+", k.strip()):
+                        part_clean = part.strip()
+                        if part_clean and part_clean not in cluster_secrets:
+                            cluster_secrets.append(part_clean)
+                elif k:
+                    item_str = str(k).strip()
+                    if item_str and item_str not in cluster_secrets:
+                        cluster_secrets.append(item_str)
 
             if not key1 and not key2:
                 raise ValueError("At least one Blast Client API Key must be specified.")
             if not cluster_secrets:
                 raise ValueError("At least one Common Cluster Mesh Secret Key must be provided.")
 
-            # Compile combined keys list
+            # Synchronize any URL cluster secrets as interconnected cluster and mesh peer nodes
+            local_urls = {
+                getattr(self.cfg, "PUBLIC_URL", "").rstrip("/"),
+                f"http://{getattr(self.cfg, 'HOST', '0.0.0.0')}:{getattr(self.cfg, 'PORT', 8080)}".rstrip("/"),
+                f"http://127.0.0.1:{getattr(self.cfg, 'PORT', 8080)}".rstrip("/"),
+                f"http://localhost:{getattr(self.cfg, 'PORT', 8080)}".rstrip("/"),
+            }
+            local_urls.discard("")
+            for cs in cluster_secrets:
+                if cs.startswith(("http://", "https://")):
+                    clean_url = cs.rstrip("/")
+                    if clean_url not in local_urls:
+                        if clean_url not in self.cfg.PEER_URLS:
+                            self.cfg.PEER_URLS.append(clean_url)
+                        if clean_url not in self.cfg.SERVER_LINKS:
+                            self.cfg.SERVER_LINKS.append(clean_url)
+                        if self.cluster_manager and hasattr(self.cluster_manager, "add_peer"):
+                            self.cluster_manager.add_peer(clean_url)
+                        if self.mesh_router and hasattr(self.mesh_router, "add_node"):
+                            self.mesh_router.add_node(clean_url)
+
+            # Compile combined keys list with trailing-slash normalization for URL keys
             combined_keys: List[str] = []
             if key1:
                 combined_keys.append(key1)
@@ -153,6 +186,13 @@ class PersistenceManager:
             for cs in cluster_secrets:
                 if cs not in combined_keys:
                     combined_keys.append(cs)
+                if cs.startswith(("http://", "https://")):
+                    c_clean = cs.rstrip("/")
+                    c_slash = c_clean + "/"
+                    if c_clean not in combined_keys:
+                        combined_keys.append(c_clean)
+                    if c_slash not in combined_keys:
+                        combined_keys.append(c_slash)
 
             # Client keys string for .env
             client_keys_str = ",".join([k for k in [key1, key2] if k])

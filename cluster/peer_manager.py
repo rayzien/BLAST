@@ -40,24 +40,37 @@ class ClusterManager:
         self.on_peer_discovered: Optional[Callable[[str, str], None]] = None
 
         # Pre-seed configured peer URLs
-        local_urls = {cfg.PUBLIC_URL.rstrip("/"), f"http://{cfg.HOST}:{cfg.PORT}".rstrip("/")}
+        local_urls = {
+            cfg.PUBLIC_URL.rstrip("/"),
+            f"http://{cfg.HOST}:{cfg.PORT}".rstrip("/"),
+            f"http://127.0.0.1:{cfg.PORT}".rstrip("/"),
+            f"http://localhost:{cfg.PORT}".rstrip("/"),
+        }
+        local_urls.discard("")
         for url in cfg.PEER_URLS:
             if url:
                 clean_url = url.strip().rstrip("/")
                 if clean_url not in local_urls:
                     peer_id = f"peer-{abs(hash(clean_url)) % 10000:04d}"
-                    self.peers[peer_id] = NodeInfo(node_id=peer_id, url=clean_url, last_seen=0.0)
+                    if peer_id not in self.peers and not any(p.url == clean_url for p in self.peers.values()):
+                        self.peers[peer_id] = NodeInfo(node_id=peer_id, url=clean_url, last_seen=0.0)
 
     def record_heartbeat(self, node_id: str, url: str, meta: Optional[Dict[str, Any]] = None):
         """Record heartbeat received from a peer instance, auto-registering new nodes."""
         clean_url = url.strip().rstrip("/")
-        local_urls = {self.cfg.PUBLIC_URL.rstrip("/"), f"http://{self.cfg.HOST}:{self.cfg.PORT}".rstrip("/")}
+        local_urls = {
+            self.cfg.PUBLIC_URL.rstrip("/"),
+            f"http://{self.cfg.HOST}:{self.cfg.PORT}".rstrip("/"),
+            f"http://127.0.0.1:{self.cfg.PORT}".rstrip("/"),
+            f"http://localhost:{self.cfg.PORT}".rstrip("/"),
+        }
+        local_urls.discard("")
         if clean_url in local_urls or node_id == self.node_id:
             return
 
         is_new = False
         with self.lock:
-            if node_id not in self.peers:
+            if node_id not in self.peers and not any(p.url == clean_url for p in self.peers.values()):
                 is_new = True
             self.peers[node_id] = NodeInfo(
                 node_id=node_id,
@@ -79,16 +92,29 @@ class ClusterManager:
     def add_peer(self, url: str, node_id: Optional[str] = None) -> Optional[NodeInfo]:
         """Manually or dynamically add a peer node."""
         clean_url = url.strip().rstrip("/")
-        local_urls = {self.cfg.PUBLIC_URL.rstrip("/"), f"http://{self.cfg.HOST}:{self.cfg.PORT}".rstrip("/")}
+        local_urls = {
+            self.cfg.PUBLIC_URL.rstrip("/"),
+            f"http://{self.cfg.HOST}:{self.cfg.PORT}".rstrip("/"),
+            f"http://127.0.0.1:{self.cfg.PORT}".rstrip("/"),
+            f"http://localhost:{self.cfg.PORT}".rstrip("/"),
+        }
+        local_urls.discard("")
         if clean_url in local_urls:
             return None
 
         nid = node_id or f"peer-{abs(hash(clean_url)) % 10000:04d}"
+        is_new = False
         with self.lock:
+            # Check if peer with same URL already exists
+            for p in self.peers.values():
+                if p.url == clean_url:
+                    p.last_seen = time.time()
+                    return p
             info = NodeInfo(node_id=nid, url=clean_url, last_seen=time.time())
             self.peers[nid] = info
+            is_new = True
 
-        if self.on_peer_discovered:
+        if is_new and self.on_peer_discovered:
             try:
                 self.on_peer_discovered(clean_url, nid)
             except Exception:

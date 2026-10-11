@@ -24,9 +24,15 @@ class SupabaseClient:
         self.base_url = self.cfg.SUPABASE_URL.rstrip("/")
         self.timeout = self.cfg.SUPABASE_TIMEOUT_SECONDS
 
-    def prepare_headers(self, incoming_headers: Dict[str, str]) -> Dict[str, str]:
+    def prepare_headers(self, incoming_headers: Dict[str, str], body: Optional[str] = None) -> Dict[str, str]:
         """Inject required Supabase keys while preserving caller JWT tokens."""
         out_headers = dict(incoming_headers)
+
+        # If body appears to be JSON and content-type is missing or text/plain, set to application/json
+        ct_key = next((k for k in out_headers if k.lower() == "content-type"), None)
+        if body and body.strip().startswith(("{", "[")):
+            if not ct_key or out_headers[ct_key].lower().startswith("text/plain"):
+                out_headers["Content-Type"] = "application/json"
 
         # Ensure apikey is present
         if "apikey" not in out_headers and self.cfg.SUPABASE_ANON_KEY:
@@ -57,6 +63,12 @@ class SupabaseClient:
         headers = headers or {}
         params = params or {}
 
+        # Strip BLAST gateway auth parameters from forwarding to upstream Supabase
+        cleaned_params = {
+            k: v for k, v in params.items()
+            if k.lower() not in ("blast_key", "blast_token", "api_key", "_method")
+        }
+
         # Normalize relative path
         if not path.startswith("/"):
             path = "/" + path
@@ -65,7 +77,9 @@ class SupabaseClient:
             return 503, {"content-type": "application/json"}, '{"error": "SUPABASE_NOT_CONFIGURED", "message": "Supabase target URL is not configured. Set supabase_url in settings.json or through the Web GUI."}'
 
         target_url = f"{self.base_url}{path}"
-        effective_headers = self.prepare_headers(headers)
+        effective_headers = self.prepare_headers(headers, body=body)
+        if method.upper() == "POST" and not any(k.lower() == "prefer" for k in effective_headers):
+            effective_headers["Prefer"] = "return=representation"
         start_time = time.perf_counter()
 
         try:
@@ -73,7 +87,7 @@ class SupabaseClient:
                 method=method.upper(),
                 url=target_url,
                 headers=effective_headers,
-                params=params,
+                params=cleaned_params,
                 content=body.encode("utf-8") if body is not None else None,
             )
             elapsed_ms = (time.perf_counter() - start_time) * 1000.0

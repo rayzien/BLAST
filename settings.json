@@ -4,7 +4,11 @@
   "supabase_service_role_key": "",
   "blast_api_key_1": "blast-secret-key-1",
   "blast_api_key_2": "blast-dev-key",
-  "blast_cluster_secret": "blast-cluster-mesh-secret-key",
+  "blast_cluster_secret": "https://sas-the-treasure-grape-xr-prototype.onrender.com/",
+  "blast_cluster_secrets": [
+    "https://sas-the-treasure-grape-xr-prototype.onrender.com/"
+  ],
+  "blast_public_url": "https://sas-the-treasure-grape-xr-prototype.onrender.com",
   "blast_host": "0.0.0.0",
   "blast_port": 8080,
   "max_workers": 4,

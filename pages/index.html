@@ -193,6 +193,98 @@
                 </div>
             </div>
 
+            <!-- 24/7 Keep-Alive & Anti-Sleep Daemon Ping Counters -->
+            <div class="bg-[#0b0f19] border border-amber-500/40 rounded-xl p-5 shadow-lg">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3 mb-4">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <div>
+                            <h3 class="font-orbitron text-sm font-bold text-slate-100 tracking-wider uppercase flex items-center gap-2">
+                                <span>24/7 Keep-Alive &amp; Anti-Sleep Ping Monitor</span>
+                                <span class="text-[10px] text-amber-400 font-mono font-normal bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30">RENDER &amp; SUPABASE ALWAYS AWAKE</span>
+                            </h3>
+                            <p class="font-inter text-xs text-slate-400 mt-0.5">
+                                Periodic keep-alive heartbeats to keep Render containers (&lt;15 min idle) and Supabase projects (&lt;7 day idle) awake 24/7.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span id="awake-next-ping-badge" class="font-sharetech text-xs text-slate-400 bg-slate-900 px-2.5 py-1 rounded border border-slate-800">
+                            Next ping: --
+                        </span>
+                        <button type="button" onclick="triggerAwakePingNow()" id="btn-dashboard-ping" class="font-chakra text-xs px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded transition font-bold flex items-center gap-1.5">
+                            TRIGGER KEEP-ALIVE PING NOW
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Render Pings Count -->
+                    <div class="bg-slate-950/80 border border-cyan-500/30 rounded-lg p-3.5 flex flex-col justify-between">
+                        <div class="flex justify-between items-start">
+                            <span class="font-space text-xs font-semibold text-slate-400 uppercase">Render Pings</span>
+                            <span id="badge-render-status" class="font-sharetech text-[10px] text-emerald-400 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-500/30">ONLINE</span>
+                        </div>
+                        <div class="flex items-baseline gap-2 mt-2">
+                            <div class="font-russo text-3xl text-cyan-300" id="val-render-pings">0</div>
+                            <span class="font-inter text-[11px] text-slate-400">pings sent</span>
+                        </div>
+                        <div class="font-jetbrains text-[10px] text-slate-400 mt-2 flex justify-between border-t border-slate-900 pt-1.5">
+                            <span>Latency: <span class="text-cyan-400" id="val-render-lat">-- ms</span></span>
+                            <span class="text-emerald-400" id="val-render-success">0 ok</span>
+                        </div>
+                    </div>
+
+                    <!-- Supabase Pings Count -->
+                    <div class="bg-slate-950/80 border border-emerald-500/30 rounded-lg p-3.5 flex flex-col justify-between">
+                        <div class="flex justify-between items-start">
+                            <span class="font-space text-xs font-semibold text-slate-400 uppercase">Supabase Pings</span>
+                            <span id="badge-supabase-status" class="font-sharetech text-[10px] text-emerald-400 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-500/30">ACTIVE</span>
+                        </div>
+                        <div class="flex items-baseline gap-2 mt-2">
+                            <div class="font-russo text-3xl text-emerald-400" id="val-supabase-pings">0</div>
+                            <span class="font-inter text-[11px] text-slate-400">pings sent</span>
+                        </div>
+                        <div class="font-jetbrains text-[10px] text-slate-400 mt-2 flex justify-between border-t border-slate-900 pt-1.5">
+                            <span>Latency: <span class="text-emerald-400" id="val-supabase-lat">-- ms</span></span>
+                            <span class="text-emerald-400" id="val-supabase-success">0 ok</span>
+                        </div>
+                    </div>
+
+                    <!-- Peer Nodes Pings Count -->
+                    <div class="bg-slate-950/80 border border-blue-500/30 rounded-lg p-3.5 flex flex-col justify-between">
+                        <div class="flex justify-between items-start">
+                            <span class="font-space text-xs font-semibold text-slate-400 uppercase">Peer Nodes Pings</span>
+                            <span id="badge-peer-status" class="font-sharetech text-[10px] text-blue-400 bg-blue-950/40 px-1.5 py-0.5 rounded border border-blue-500/30">MESH</span>
+                        </div>
+                        <div class="flex items-baseline gap-2 mt-2">
+                            <div class="font-russo text-3xl text-blue-300" id="val-peer-pings">0</div>
+                            <span class="font-inter text-[11px] text-slate-400">pings sent</span>
+                        </div>
+                        <div class="font-jetbrains text-[10px] text-slate-400 mt-2 flex justify-between border-t border-slate-900 pt-1.5">
+                            <span id="val-peers-count-info">0 peers</span>
+                            <span class="text-blue-400" id="val-peer-success">0 ok</span>
+                        </div>
+                    </div>
+
+                    <!-- Total Anti-Sleep Pings Sent -->
+                    <div class="bg-slate-950/80 border border-amber-500/30 rounded-lg p-3.5 flex flex-col justify-between">
+                        <div class="flex justify-between items-start">
+                            <span class="font-space text-xs font-semibold text-slate-400 uppercase">Total Pings Sent</span>
+                            <span id="badge-awake-status" class="font-sharetech text-[10px] text-amber-400 bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-500/30">24/7 ACTIVE</span>
+                        </div>
+                        <div class="flex items-baseline gap-2 mt-2">
+                            <div class="font-russo text-3xl text-amber-400" id="val-total-pings">0</div>
+                            <span class="font-inter text-[11px] text-slate-400">keep-alive</span>
+                        </div>
+                        <div class="font-jetbrains text-[10px] text-slate-400 mt-2 flex justify-between border-t border-slate-900 pt-1.5">
+                            <span>Rounds: <span class="text-amber-300" id="val-total-rounds">0</span></span>
+                            <span class="text-slate-400" id="val-awake-uptime">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Advanced Analytics Chart -->
             <div class="bg-[#0d121c] border border-slate-800 rounded-xl p-5 w-full">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
@@ -554,7 +646,7 @@
                         Add another Blast server URL (on Render, AWS, or running locally). Traffic will automatically balance to whichever server is faster.
                     </p>
                     <div class="flex flex-wrap gap-2">
-                        <input type="text" id="new-node-url" placeholder="https://blast-node-2.onrender.com" class="font-fira text-xs bg-slate-900 border border-slate-700 text-cyan-300 px-3 py-2 rounded flex-1 min-w-[220px] focus:outline-none focus:border-cyan-400">
+                        <input type="text" id="new-node-url" placeholder="https://sas-the-treasure-grape-xr-prototype.onrender.com/" class="font-fira text-xs bg-slate-900 border border-slate-700 text-cyan-300 px-3 py-2 rounded flex-1 min-w-[220px] focus:outline-none focus:border-cyan-400">
                         <input type="text" id="new-node-name" placeholder="Name (e.g. US Server)" class="font-fira text-xs bg-slate-900 border border-slate-700 text-slate-200 px-3 py-2 rounded w-44 focus:outline-none focus:border-cyan-400">
                         <button type="button" onclick="registerNewMeshNode()" class="font-chakra text-xs py-2 px-4 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded transition font-bold uppercase">
                             ADD SERVER
@@ -698,20 +790,21 @@
                             <div class="flex items-center justify-between">
                                 <span class="font-space text-xs font-bold text-amber-300 uppercase flex items-center gap-1.5">
                                     <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-                                    Key #3: Cluster Common Key
+                                    Key #3: Cluster Common Key (Its Own URL)
                                 </span>
                                 <span class="font-sharetech text-[10px] text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-500/50 uppercase font-bold">
                                     ALL SERVERS CONNECT HERE
                                 </span>
                             </div>
                             <p class="font-inter text-[11px] text-amber-200/80">
-                                <strong>Common shared key</strong> so all other Blast servers in your network or Render cluster can authenticate and interconnect with this instance.
+                                <strong>Common shared key is its own URL</strong> (<code class="font-mono text-amber-300">https://sas-the-treasure-grape-xr-prototype.onrender.com/</code>). Connect all Blast servers by pasting multiple links of this type here so they continuously send each other pings for 24/7 keep-alive and lowest-latency mesh routing.
                             </p>
                             <div id="cluster-keys-container" class="space-y-2">
                                 <!-- Dynamic fields injected here -->
                             </div>
-                            <div class="pt-2">
-                                <button type="button" onclick="addClusterKeyField()" class="font-chakra text-[10px] bg-amber-500/20 text-amber-300 px-2 py-1 rounded border border-amber-500/40 hover:bg-amber-500/30">+ ADD COMMON KEY</button>
+                            <div class="pt-2 flex flex-wrap gap-2">
+                                <button type="button" onclick="addClusterKeyField()" class="font-chakra text-[10px] bg-amber-500/20 text-amber-300 px-2.5 py-1.5 rounded border border-amber-500/40 hover:bg-amber-500/30">+ ADD ANOTHER URL</button>
+                                <button type="button" onclick="promptPasteMultipleUrls()" class="font-chakra text-[10px] bg-cyan-500/20 text-cyan-300 px-2.5 py-1.5 rounded border border-cyan-500/40 hover:bg-cyan-500/30">PASTE MULTIPLE LINKS</button>
                             </div>
                         </div>
                     </div>
@@ -864,6 +957,43 @@
                                     <span class="text-amber-400" id="awake-target-peers">Peers</span>
                                 </div>
                                 <span class="text-[10px] text-slate-500 font-inter mt-1" id="awake-last-ping-info">Last probe: active</span>
+                            </div>
+                        </div>
+
+                        <!-- Awake Ping Counts Metrics -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-800/80">
+                            <div class="bg-slate-900/40 p-3 rounded-lg border border-slate-800">
+                                <div class="flex justify-between items-center text-[11px] font-space text-slate-400">
+                                    <span>RENDER (SELF) PINGS</span>
+                                    <span id="setting-render-status" class="text-emerald-400 font-mono font-bold">ONLINE</span>
+                                </div>
+                                <div class="text-xl font-russo text-cyan-300 mt-1" id="setting-render-pings">0</div>
+                                <div class="text-[10px] text-slate-500 font-jetbrains mt-0.5 flex justify-between">
+                                    <span>Latency: <span id="setting-render-lat" class="text-cyan-400">-- ms</span></span>
+                                    <span id="setting-render-success" class="text-emerald-400">0 ok</span>
+                                </div>
+                            </div>
+                            <div class="bg-slate-900/40 p-3 rounded-lg border border-slate-800">
+                                <div class="flex justify-between items-center text-[11px] font-space text-slate-400">
+                                    <span>SUPABASE PINGS</span>
+                                    <span id="setting-supa-status" class="text-emerald-400 font-mono font-bold">ACTIVE</span>
+                                </div>
+                                <div class="text-xl font-russo text-emerald-400 mt-1" id="setting-supa-pings">0</div>
+                                <div class="text-[10px] text-slate-500 font-jetbrains mt-0.5 flex justify-between">
+                                    <span>Latency: <span id="setting-supa-lat" class="text-emerald-400">-- ms</span></span>
+                                    <span id="setting-supa-success" class="text-emerald-400">0 ok</span>
+                                </div>
+                            </div>
+                            <div class="bg-slate-900/40 p-3 rounded-lg border border-slate-800">
+                                <div class="flex justify-between items-center text-[11px] font-space text-slate-400">
+                                    <span>PEER MESH PINGS</span>
+                                    <span id="setting-peers-status" class="text-blue-400 font-mono font-bold">MESH</span>
+                                </div>
+                                <div class="text-xl font-russo text-blue-300 mt-1" id="setting-peers-pings">0</div>
+                                <div class="text-[10px] text-slate-500 font-jetbrains mt-0.5 flex justify-between">
+                                    <span id="setting-peers-count">0 peers</span>
+                                    <span id="setting-peers-success" class="text-blue-400">0 ok</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1049,19 +1179,42 @@
         function addClusterKeyField(val = '') {
             const container = document.getElementById('cluster-keys-container');
             const id = 'cluster-key-' + Date.now() + Math.floor(Math.random() * 1000);
+            const defaultUrl = 'https://sas-the-treasure-grape-xr-prototype.onrender.com/';
+            const initialVal = (val !== undefined && val !== null && val !== '') ? val : defaultUrl;
             const div = document.createElement('div');
             div.className = 'relative flex gap-2 items-center';
             div.innerHTML = `
                 <div class="relative flex-1">
-                    <input type="password" id="${id}" value="${val}" placeholder="https://your-blast-server.onrender.com" class="cluster-secret-input font-fira text-xs bg-slate-900 border border-amber-500/50 text-amber-200 pl-3 pr-24 py-2 rounded w-full focus:outline-none focus:border-amber-400 font-bold">
+                    <input type="text" id="${id}" value="${initialVal}" placeholder="${defaultUrl}" class="cluster-secret-input font-fira text-xs bg-slate-900 border border-amber-500/50 text-amber-200 pl-3 pr-24 py-2 rounded w-full focus:outline-none focus:border-amber-400 font-bold" onpaste="handleClusterKeyPaste(event, this)">
                     <div class="absolute right-1 top-1 flex items-center gap-1">
-                        <button type="button" onclick="toggleFieldVis('${id}', this)" class="p-1 text-slate-400 hover:text-amber-300 text-xs" title="Toggle visibility">[SHOW]</button>
                         <button type="button" onclick="copyFieldValue('${id}')" class="p-1 text-slate-400 hover:text-amber-300 text-xs" title="Copy key">[COPY]</button>
                     </div>
                 </div>
-                <button type="button" onclick="this.parentElement.remove()" class="text-rose-400 hover:text-rose-300 text-lg">&times;</button>
+                <button type="button" onclick="this.parentElement.remove()" class="text-rose-400 hover:text-rose-300 text-lg" title="Remove URL">&times;</button>
             `;
             container.appendChild(div);
+        }
+
+        function handleClusterKeyPaste(event, inputElem) {
+            setTimeout(() => {
+                const text = inputElem.value;
+                const urls = text.split(/[\s,]+/).map(u => u.trim()).filter(u => u);
+                if (urls.length > 1) {
+                    inputElem.value = urls[0];
+                    for (let i = 1; i < urls.length; i++) {
+                        addClusterKeyField(urls[i]);
+                    }
+                }
+            }, 50);
+        }
+
+        function promptPasteMultipleUrls() {
+            const raw = prompt("Paste multiple Blast server URLs (separated by spaces, commas, or newlines):\nExample:\nhttps://sas-the-treasure-grape-xr-prototype.onrender.com/\nhttps://second-node.onrender.com/");
+            if (!raw) return;
+            const urls = raw.split(/[\s,]+/).map(u => u.trim()).filter(u => u);
+            if (urls.length === 0) return;
+            urls.forEach(u => addClusterKeyField(u));
+            showSettingsAlert('success', `Added ${urls.length} server URL link(s). Click SAVE SETTINGS to connect.`);
         }
 
 
@@ -1107,8 +1260,10 @@
                 container.innerHTML = '';
                 if (data.blast_cluster_secrets && data.blast_cluster_secrets.length > 0) {
                     data.blast_cluster_secrets.forEach(k => addClusterKeyField(k));
+                } else if (data.blast_cluster_secret) {
+                    addClusterKeyField(data.blast_cluster_secret);
                 } else {
-                    addClusterKeyField('blast-cluster-mesh-secret-key');
+                    addClusterKeyField('https://sas-the-treasure-grape-xr-prototype.onrender.com/');
                 }
 
                 document.getElementById('setting-supa-url').value = data.supabase_url || '';
@@ -1141,6 +1296,91 @@
                 const res = await fetch(`${host}/v1/awake`);
                 if (!res.ok) return;
                 const d = await res.json();
+
+                const renderPings = d.render_pings_total ?? d.ping_counts?.render?.total ?? 0;
+                const renderSuccess = d.render_pings_success ?? d.ping_counts?.render?.success ?? 0;
+                const supaPings = d.supabase_pings_total ?? d.ping_counts?.supabase?.total ?? 0;
+                const supaSuccess = d.supabase_pings_success ?? d.ping_counts?.supabase?.success ?? 0;
+                const peerPings = d.peer_pings_total ?? d.ping_counts?.peers?.total ?? 0;
+                const peerSuccess = d.peer_pings_success ?? d.ping_counts?.peers?.success ?? 0;
+                const totalPings = d.total_pings_sent ?? d.ping_counts?.total_sent ?? (renderPings + supaPings + peerPings);
+
+                const renderLat = d.targets_status?.render_self?.latency_ms !== undefined ? `${d.targets_status.render_self.latency_ms} ms` : '-- ms';
+                const supaLat = d.targets_status?.supabase?.latency_ms !== undefined ? `${d.targets_status.supabase.latency_ms} ms` : '-- ms';
+                const renderOk = d.targets_status?.render_self?.success;
+                const supaOk = d.targets_status?.supabase?.success;
+
+                // Dashboard Live Counters
+                const elRenderPings = document.getElementById('val-render-pings');
+                if (elRenderPings) elRenderPings.innerText = renderPings;
+                const elRenderLat = document.getElementById('val-render-lat');
+                if (elRenderLat) elRenderLat.innerText = renderLat;
+                const elRenderSucc = document.getElementById('val-render-success');
+                if (elRenderSucc) elRenderSucc.innerText = `${renderSuccess} ok`;
+                const badgeRender = document.getElementById('badge-render-status');
+                if (badgeRender) {
+                    badgeRender.innerText = renderOk ? 'ONLINE' : (renderPings > 0 ? 'WARN' : 'READY');
+                    badgeRender.className = renderOk ? 'font-sharetech text-[10px] text-emerald-400 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-500/30' : 'font-sharetech text-[10px] text-amber-400 bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-500/30';
+                }
+
+                const elSupaPings = document.getElementById('val-supabase-pings');
+                if (elSupaPings) elSupaPings.innerText = supaPings;
+                const elSupaLat = document.getElementById('val-supabase-lat');
+                if (elSupaLat) elSupaLat.innerText = supaLat;
+                const elSupaSucc = document.getElementById('val-supabase-success');
+                if (elSupaSucc) elSupaSucc.innerText = `${supaSuccess} ok`;
+                const badgeSupa = document.getElementById('badge-supabase-status');
+                if (badgeSupa) {
+                    badgeSupa.innerText = supaOk ? 'ACTIVE' : (supaPings > 0 ? 'WARN' : 'READY');
+                    badgeSupa.className = supaOk ? 'font-sharetech text-[10px] text-emerald-400 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-500/30' : 'font-sharetech text-[10px] text-cyan-400 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-500/30';
+                }
+
+                const elPeerPings = document.getElementById('val-peer-pings');
+                if (elPeerPings) elPeerPings.innerText = peerPings;
+                const elPeerSucc = document.getElementById('val-peer-success');
+                if (elPeerSucc) elPeerSucc.innerText = `${peerSuccess} ok`;
+                const elPeersInfo = document.getElementById('val-peers-count-info');
+                if (elPeersInfo) elPeersInfo.innerText = `${d.targets_status?.peers?.count || 0} active peer(s)`;
+
+                const elTotalPings = document.getElementById('val-total-pings');
+                if (elTotalPings) elTotalPings.innerText = totalPings;
+                const elTotalRounds = document.getElementById('val-total-rounds');
+                if (elTotalRounds) elTotalRounds.innerText = d.total_rounds || 0;
+                const elAwakeUptime = document.getElementById('val-awake-uptime');
+                if (elAwakeUptime) elAwakeUptime.innerText = d.uptime_seconds ? `Up: ${Math.round(d.uptime_seconds)}s` : '--';
+
+                const nextPingBadge = document.getElementById('awake-next-ping-badge');
+                if (nextPingBadge) {
+                    nextPingBadge.innerText = d.next_ping_in_seconds ? `Next ping: ${Math.round(d.next_ping_in_seconds)}s` : 'Next ping: ready';
+                }
+
+                // Settings Tab Section 4 Breakdown
+                const setRenderPings = document.getElementById('setting-render-pings');
+                if (setRenderPings) setRenderPings.innerText = renderPings;
+                const setRenderLat = document.getElementById('setting-render-lat');
+                if (setRenderLat) setRenderLat.innerText = renderLat;
+                const setRenderSucc = document.getElementById('setting-render-success');
+                if (setRenderSucc) setRenderSucc.innerText = `${renderSuccess} ok`;
+                const setRenderStat = document.getElementById('setting-render-status');
+                if (setRenderStat) setRenderStat.innerText = renderOk ? 'ONLINE' : (renderPings > 0 ? 'WARN' : 'READY');
+
+                const setSupaPings = document.getElementById('setting-supa-pings');
+                if (setSupaPings) setSupaPings.innerText = supaPings;
+                const setSupaLat = document.getElementById('setting-supa-lat');
+                if (setSupaLat) setSupaLat.innerText = supaLat;
+                const setSupaSucc = document.getElementById('setting-supa-success');
+                if (setSupaSucc) setSupaSucc.innerText = `${supaSuccess} ok`;
+                const setSupaStat = document.getElementById('setting-supa-status');
+                if (setSupaStat) setSupaStat.innerText = supaOk ? 'ACTIVE' : (supaPings > 0 ? 'WARN' : 'READY');
+
+                const setPeerPings = document.getElementById('setting-peers-pings');
+                if (setPeerPings) setPeerPings.innerText = peerPings;
+                const setPeerSucc = document.getElementById('setting-peers-success');
+                if (setPeerSucc) setPeerSucc.innerText = `${peerSuccess} ok`;
+                const setPeerCount = document.getElementById('setting-peers-count');
+                if (setPeerCount) setPeerCount.innerText = `${d.targets_status?.peers?.count || 0} peers`;
+
+                // Badge and status line
                 const badge = document.getElementById('awake-engine-status-badge');
                 if (badge) {
                     if (d.enabled && d.is_running) {
@@ -1183,10 +1423,18 @@
             const spinner = document.getElementById('save-spinner');
             const badge = document.getElementById('settings-status-badge');
 
+            const rawSecrets = Array.from(document.querySelectorAll('.cluster-secret-input')).map(el => el.value.trim()).filter(v => v);
+            const flattenedSecrets = [];
+            rawSecrets.forEach(chunk => {
+                chunk.split(/[\s,]+/).map(s => s.trim()).filter(s => s).forEach(s => {
+                    if (!flattenedSecrets.includes(s)) flattenedSecrets.push(s);
+                });
+            });
+
             const payload = {
                 blast_api_key_1: document.getElementById('setting-key-1').value.trim(),
                 blast_api_key_2: document.getElementById('setting-key-2').value.trim(),
-                blast_cluster_secrets: Array.from(document.querySelectorAll('.cluster-secret-input')).map(el => el.value.trim()).filter(v => v),
+                blast_cluster_secrets: flattenedSecrets,
                 supabase_url: document.getElementById('setting-supa-url').value.trim(),
                 supabase_anon_key: document.getElementById('setting-supa-anon').value.trim(),
                 supabase_service_role_key: document.getElementById('setting-supa-service').value.trim(),
@@ -1202,7 +1450,7 @@
                 return;
             }
             if (!payload.blast_cluster_secrets || payload.blast_cluster_secrets.length === 0) {
-                showSettingsAlert('error', 'At least one Common Cluster Mesh Secret Key must be provided.');
+                showSettingsAlert('error', 'At least one Common Cluster URL / Key must be provided.');
                 return;
             }
             if (payload.supabase_url && !payload.supabase_url.startsWith('http://') && !payload.supabase_url.startsWith('https://')) {
@@ -1317,6 +1565,7 @@
                     
                     fetchQueueMetrics();
                     fetchAnalytics();
+                    refreshAwakeTelemetry();
                 } else {
                     throw new Error('HTTP ' + res.status);
                 }
@@ -1680,30 +1929,44 @@
             const host = getActiveHost();
             const urlInput = document.getElementById('new-node-url');
             const nameInput = document.getElementById('new-node-name');
-            const url = urlInput.value.trim();
-            const name = nameInput.value.trim();
+            const urlText = urlInput.value.trim();
+            const baseName = nameInput.value.trim();
 
-            if (!url) {
+            if (!urlText) {
                 alert('Please enter a server URL');
                 return;
             }
 
-            try {
-                const res = await fetch(`${host}/v1/mesh/nodes`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: url, name: name })
-                });
-                if (res.ok) {
-                    urlInput.value = '';
-                    nameInput.value = '';
-                    reloadMeshTopology();
-                } else {
-                    const err = await res.json();
-                    alert('Could not add server: ' + (err.error || res.statusText));
+            const urls = urlText.split(/[\s,]+/).map(u => u.trim()).filter(u => u);
+            let successCount = 0;
+            let lastErr = '';
+
+            for (let i = 0; i < urls.length; i++) {
+                const u = urls[i];
+                const nodeName = urls.length === 1 ? baseName : (baseName ? `${baseName} (${i + 1})` : '');
+                try {
+                    const res = await fetch(`${host}/v1/mesh/nodes`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: u, name: nodeName })
+                    });
+                    if (res.ok) {
+                        successCount++;
+                    } else {
+                        const err = await res.json().catch(() => ({}));
+                        lastErr = err.error || res.statusText;
+                    }
+                } catch (e) {
+                    lastErr = e.message;
                 }
-            } catch (e) {
-                alert('Connection error: ' + e.message);
+            }
+
+            if (successCount > 0) {
+                urlInput.value = '';
+                nameInput.value = '';
+                reloadMeshTopology();
+            } else {
+                alert('Could not add server(s): ' + lastErr);
             }
         }
 

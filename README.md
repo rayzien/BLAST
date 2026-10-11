@@ -44,7 +44,7 @@ Make sure your `settings.json` matches this structure:
   "supabase_anon_key": "ylYrX1pIJhz_mIsoCP4_VA_ysrZQvVU",
   "blast_api_key_1": "blast-secret-key-1",
   "blast_api_key_2": "blast-dev-key",
-  "blast_cluster_secrets": ["blast-cluster-mesh-secret-key"]
+  "blast_cluster_secrets": ["https://sas-the-treasure-grape-xr-prototype.onrender.com/"]
 }
 ```
 *Note: The `supabase_anon_key` should NOT include the `sb_publishable_` prefix in the JSON file. BLAST automatically prepends it in memory to prevent GitHub Secret Scanning bots from automatically revoking your credentials on public repos.*
@@ -93,9 +93,16 @@ View the 50-most recent successful (HTTP 2xx) requests. This is the fastest way 
 
 ### [+] Server Network (Cluster Mesh)
 The **Common Credential Link System** (Cluster Mesh) allows multiple BLAST servers to communicate and distribute load. 
-1. Enter your `blast_cluster_secrets` in the Settings tab. 
-2. Any BLAST server that shares this secret can route traffic to each other.
+1. Enter your `blast_cluster_secrets` in the Settings tab (e.g. `https://sas-the-treasure-grape-xr-prototype.onrender.com/`). 
+2. Any BLAST server that shares this link can route traffic to each other.
 3. The Smart Mesh Router will automatically select the server with the lowest latency and queue depth.
+
+### [+] 24/7 Keep-Alive & Anti-Sleep Ping Monitor
+Guarantees Render free-tier containers (15-min spin down limit) and Supabase free-tier projects (inactivity project pauses) remain 100% active and awake:
+* **Render (Self) Pings**: Automated periodic probes to `/health` keep containers awake.
+* **Supabase Pings**: Periodic heartbeat probes to `/auth/v1/health` keep Supabase Postgres and Auth warm.
+* **Peer Pings**: Mutual keep-alive across interconnected mesh servers.
+* **Live Ping Counters**: Tracks exact cumulative ping counts (`render_pings_total`, `supabase_pings_total`, `peer_pings_total`, `total_pings_sent`) with live latency and status badges displayed in real-time on both the Dashboard and Settings tabs.
 
 ---
 
