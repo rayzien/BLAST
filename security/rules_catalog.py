@@ -54,3 +54,4 @@ RULES_CATALOG["SEC-0048"] = {"id": "SEC-0048", "category": "identity_protection"
 RULES_CATALOG["SEC-0049"] = {"id": "SEC-0049", "category": "identity_protection", "severity": "HIGH", "description": "enforce timestamp freshness window under 300 seconds", "active": True}
 RULES_CATALOG["SEC-0050"] = {"id": "SEC-0050", "category": "identity_protection", "severity": "HIGH", "description": "prevent replay attack via LRU nonce cache tracking", "active": True}
 RULES_CATALOG["SEC-0051"] = {"id": "SEC-0051", "category": "identity_protection", "severity": "HIGH", "description": "validate client IP subnet session continuity", "active": True}
+RULES_CATALOG["SEC-0052"] = {"id": "SEC-0052", "category": "identity_protection", "severity": "HIGH", "description": "validate user-agent device family consistency", "active": True}
