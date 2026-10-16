@@ -110,3 +110,4 @@ RULES_CATALOG["SEC-0104"] = {"id": "SEC-0104", "category": "sql_injection", "sev
 RULES_CATALOG["SEC-0105"] = {"id": "SEC-0105", "category": "sql_injection", "severity": "CRITICAL", "description": "detect blind boolean-based injection heuristic (variant 2)", "active": True}
 RULES_CATALOG["SEC-0106"] = {"id": "SEC-0106", "category": "sql_injection", "severity": "CRITICAL", "description": "detect time-based delay injection pg_sleep benchmark (variant 2)", "active": True}
 RULES_CATALOG["SEC-0107"] = {"id": "SEC-0107", "category": "sql_injection", "severity": "CRITICAL", "description": "detect out-of-band DNS exfiltration attempt (variant 2)", "active": True}
+RULES_CATALOG["SEC-0108"] = {"id": "SEC-0108", "category": "sql_injection", "severity": "CRITICAL", "description": "detect comment delimiter sequence in query parameter (variant 2)", "active": True}
