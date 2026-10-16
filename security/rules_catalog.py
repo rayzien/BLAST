@@ -26,3 +26,4 @@ RULES_CATALOG["SEC-0020"] = {"id": "SEC-0020", "category": "sql_injection", "sev
 RULES_CATALOG["SEC-0021"] = {"id": "SEC-0021", "category": "sql_injection", "severity": "CRITICAL", "description": "detect version fingerprinting database query", "active": True}
 RULES_CATALOG["SEC-0022"] = {"id": "SEC-0022", "category": "sql_injection", "severity": "CRITICAL", "description": "detect cast operator injection to arbitrary types", "active": True}
 RULES_CATALOG["SEC-0023"] = {"id": "SEC-0023", "category": "sql_injection", "severity": "CRITICAL", "description": "detect hex-encoded string literal SQL construct", "active": True}
+RULES_CATALOG["SEC-0024"] = {"id": "SEC-0024", "category": "sql_injection", "severity": "CRITICAL", "description": "detect null byte injection inside string literal", "active": True}
