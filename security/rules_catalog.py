@@ -254,3 +254,4 @@ RULES_CATALOG["SEC-0248"] = {"id": "SEC-0248", "category": "input_guard", "sever
 RULES_CATALOG["SEC-0249"] = {"id": "SEC-0249", "category": "input_guard", "severity": "HIGH", "description": "enforce valid alphanumeric identifier schema for column names (variant 3)", "active": True}
 RULES_CATALOG["SEC-0250"] = {"id": "SEC-0250", "category": "input_guard", "severity": "HIGH", "description": "block bash command execution chaining in payload parameters (variant 3)", "active": True}
 RULES_CATALOG["SEC-0251"] = {"id": "SEC-0251", "category": "input_guard", "severity": "HIGH", "description": "block curl and wget command execution heuristics (variant 3)", "active": True}
+RULES_CATALOG["SEC-0252"] = {"id": "SEC-0252", "category": "input_guard", "severity": "HIGH", "description": "block netcat reverse shell heuristic sequence (variant 3)", "active": True}
