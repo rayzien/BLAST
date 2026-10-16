@@ -1,6 +1,12 @@
 # B.L.A.S.T. Gateway (Backend Logic & Automated Security Tunnel)
 
-BLAST is a high-performance, asynchronous edge gateway designed to protect, route, and queue requests to your Supabase backend. It features smart mesh routing, dead letter queues (DLQ), automated background worker maintenance, and dynamic credential management.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Release: v1.3.0](https://img.shields.io/badge/Release-v1.3.0--experimental-blueviolet.svg)](RELEASE_NOTES_v1.3.0.md)
+[![Python: 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://python.org)
+[![Build Status](https://img.shields.io/badge/Tests-71%2F71%20passing-brightgreen.svg)](tests/)
+
+BLAST is a high-performance, open-source asynchronous edge gateway designed to protect, route, and queue requests to your Supabase backend. It features anti-identity theft guardrails, strict input sanitization, credit quota enforcement, smart mesh routing, dead letter queues (DLQ), automated 24/7 keep-alive background workers, and dynamic credential management.
+
 
 ---
 
@@ -111,8 +117,49 @@ Guarantees Render free-tier containers (15-min spin down limit) and Supabase fre
 All databases and logs are strictly isolated to the `logs/` directory, making backups and persistence across ephemeral deployments (like Render free tiers) incredibly easy:
 
 * `logs/blast_queue.db`: SQLite database holding your active queue, DLQ, and mesh nodes.
+* `logs/blast_credits.db`: Persistent SQLite database holding per-client credit balances and quotas.
 * `logs/blast.log`: Raw append-only logs for external ingestion.
 * `logs/settings.json`: Synchronized configurations from the Web GUI.
 
 ---
-**Build passing | Mesh Routing Active | Background Workers Engaged**
+
+## [VI] Experimental Advanced Security System
+
+BLAST v1.3.0 introduces an experimental multi-layer security guardrail system configured in the Web GUI or `settings.json`:
+
+1. **Anti-Identity Theft & Anti-Spoofing Guard (`security/identity.py`)**:
+   - Strips untrusted user identity headers (`X-Blast-Client-Id`, `X-Blast-Identity`, `X-User-Id`, `X-Remote-User`, `X-Forwarded-User`, `X-Blast-Role`) so random clients cannot impersonate other users or system accounts.
+   - Cryptographically derives and verifies client proof tokens (`X-Blast-Identity-Token`).
+   - Session fingerprint tracking detects credential theft and network anomalies.
+   - Replay attack prevention with nonce tracking (`X-Blast-Nonce`) and timestamp freshness validation.
+
+2. **Strict Input & Arbitrary Payload Guard (`security/input_guard.py`)**:
+   - Prevents prototype pollution attacks by blocking `__proto__`, `constructor`, and `prototype` keys.
+   - Detects dangerous control characters and shell command injection heuristics.
+   - Enforces JSON nesting depth (<= 10) and object property count (<= 150) to prevent JSON bomb denial-of-service.
+
+---
+
+## [VII] Client Credit Quota & Balance Subsystem
+
+To prevent resource exhaustion and free-tier abuse, BLAST tracks client credit balances atomically:
+
+* **Automatic Credit Checking**: Verifies that calling clients have sufficient credits before proxying or queuing requests.
+* **HTTP 402 Payment Required**: Clients with exhausted credits receive an HTTP 402 response with code `INSUFFICIENT_CREDITS`.
+* **Cost Structure**: Configurable via Settings (`credits_per_proxy_request` = 1, `credits_per_queue_request` = 2, `default_client_credits` = 1000).
+* **Credit Endpoints**:
+  - `GET /v1/credits`: Returns current balance and cost parameters.
+  - `POST /v1/credits/refill`: Refills credits for a target client.
+  - `GET /v1/credits/stats`: Global quota report across all clients.
+
+---
+
+## [VIII] License & Contributing
+
+BLAST is free and open-source software licensed under the **[MIT License](LICENSE)**.
+
+Contributions, issues, and feature requests are welcome! See **[CONTRIBUTING.md](CONTRIBUTING.md)** for details.
+
+---
+**Build passing (71/71 tests) | Open Source (MIT) | Mesh Routing Active | Security Guardrails Engaged**
+

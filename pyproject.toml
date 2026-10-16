@@ -4,10 +4,18 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "blast"
-version = "1.2.1"
+version = "1.3.0"
 description = "High-Performance Security, Queue, and Clustering Gateway for Supabase"
 readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.9"
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Topic :: Internet :: Proxy Servers",
+    "Topic :: Security",
+]
 dependencies = [
     "flask>=3.0.0",
     "werkzeug>=3.0.0",
@@ -15,6 +23,7 @@ dependencies = [
     "requests>=2.31.0",
     "redis>=5.0.0",
 ]
+
 
 [project.scripts]
 blast = "cli:main"

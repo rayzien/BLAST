@@ -997,9 +997,99 @@
                             </div>
                         </div>
                     </div>
+                <!-- Section 4.5: Experimental Advanced Settings & Credit Guard -->
+                <div class="bg-slate-950 border border-purple-500/40 p-6 rounded-xl space-y-6 shadow-2xl relative overflow-hidden">
+                    <div class="absolute -right-12 -top-12 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <div class="flex items-center justify-between border-b border-purple-900/40 pb-4">
+                        <div class="space-y-1">
+                            <h3 class="font-space text-sm font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse"></span>
+                                [EXPERIMENTAL] ADVANCED SECURITY &amp; IDENTITY PROTECTION
+                            </h3>
+                            <p class="font-inter text-xs text-slate-400">
+                                Anti-identity theft, cryptographic anti-spoofing guard, strict input sanitization, and credit quota checks.
+                            </p>
+                        </div>
+                        <span class="font-jetbrains text-[10px] text-purple-300 bg-purple-950/60 border border-purple-500/30 px-2 py-0.5 rounded uppercase font-bold tracking-wider">v1.3.0 Experimental</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Left col: Security switches -->
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                                <div>
+                                    <div class="font-space text-xs font-bold text-slate-200">ADVANCED SECURITY SHIELD</div>
+                                    <div class="text-[11px] text-slate-400">Master switch for experimental identity and input guardrails</div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="setting-adv-sec-enabled" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+
+                            <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                                <div>
+                                    <div class="font-space text-xs font-bold text-slate-200">IDENTITY PROTECTION &amp; ANTI-SPOOFING</div>
+                                    <div class="text-[11px] text-slate-400">Strips untrusted user headers &amp; prevents identity theft</div>
+                                </div>
+                                <select id="setting-id-mode" class="bg-slate-950 border border-purple-500/40 text-purple-300 text-xs rounded px-2.5 py-1 font-mono focus:outline-none">
+                                    <option value="strict">STRICT</option>
+                                    <option value="standard">STANDARD</option>
+                                </select>
+                            </div>
+
+                            <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                                <div>
+                                    <div class="font-space text-xs font-bold text-slate-200">STRICT INPUT VALIDATION</div>
+                                    <div class="text-[11px] text-slate-400">Blocks prototype pollution, control bytes &amp; arbitrary payloads</div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="setting-strict-input" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Right col: Credit quota settings -->
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                                <div>
+                                    <div class="font-space text-xs font-bold text-slate-200">CREDIT QUOTA ENFORCEMENT</div>
+                                    <div class="text-[11px] text-slate-400">Requires positive credit balance for proxy and write queues</div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="setting-credit-check" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-space text-slate-400 mb-1">INITIAL CREDITS</label>
+                                    <input type="number" id="setting-default-credits" class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded p-2 font-mono" value="1000">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-space text-slate-400 mb-1">PROXY COST</label>
+                                    <input type="number" id="setting-proxy-cost" class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded p-2 font-mono" value="1">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-space text-slate-400 mb-1">QUEUE COST</label>
+                                    <input type="number" id="setting-queue-cost" class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded p-2 font-mono" value="2">
+                                </div>
+                            </div>
+
+                            <!-- Live Credit Status Badge -->
+                            <div class="bg-purple-950/20 border border-purple-500/20 p-3 rounded-lg flex items-center justify-between">
+                                <span class="text-xs font-space text-slate-300">ACTIVE CLIENT CREDIT BALANCE:</span>
+                                <span id="setting-live-credits" class="font-russo text-sm text-purple-400 font-bold">1,000 CREDITS</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Section 5: Actions & Persistence Bar -->
+
                 <div class="bg-slate-950 border border-cyan-500/30 p-5 rounded-xl flex flex-wrap items-center justify-between gap-4">
                     <div class="space-y-1">
                         <div class="font-space text-xs font-bold text-slate-200 uppercase flex items-center gap-2">
@@ -1282,6 +1372,29 @@
                     document.getElementById('setting-awake-interval').value = data.awake_interval_seconds || 540;
                 }
 
+                if (document.getElementById('setting-adv-sec-enabled')) {
+                    document.getElementById('setting-adv-sec-enabled').checked = (data.advanced_security_enabled !== false);
+                }
+                if (document.getElementById('setting-id-mode')) {
+                    document.getElementById('setting-id-mode').value = data.identity_protection_mode || 'strict';
+                }
+                if (document.getElementById('setting-strict-input')) {
+                    document.getElementById('setting-strict-input').checked = (data.strict_input_validation !== false);
+                }
+                if (document.getElementById('setting-credit-check')) {
+                    document.getElementById('setting-credit-check').checked = (data.credit_check_enabled !== false);
+                }
+                if (document.getElementById('setting-default-credits')) {
+                    document.getElementById('setting-default-credits').value = data.default_client_credits || 1000;
+                }
+                if (document.getElementById('setting-proxy-cost')) {
+                    document.getElementById('setting-proxy-cost').value = data.credits_per_proxy_request || 1;
+                }
+                if (document.getElementById('setting-queue-cost')) {
+                    document.getElementById('setting-queue-cost').value = data.credits_per_queue_request || 2;
+                }
+                loadClientCreditBalance();
+
                 if (badge) badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400"></span> SYNCED';
                 refreshAwakeTelemetry();
             } catch (err) {
@@ -1289,6 +1402,21 @@
                 showSettingsAlert('error', `Failed loading settings from gateway: ${err.message}. Ensure gateway is connected.`);
             }
         }
+
+        async function loadClientCreditBalance() {
+            const host = getActiveHost();
+            const el = document.getElementById('setting-live-credits');
+            if (!el) return;
+            try {
+                const res = await fetch(`${host}/v1/credits`, {
+                    headers: { 'X-Blast-Key': getActiveKey() }
+                });
+                if (!res.ok) return;
+                const d = await res.json();
+                el.innerText = `${(d.balance ?? 1000).toLocaleString()} CREDITS`;
+            } catch (e) {}
+        }
+
 
         async function refreshAwakeTelemetry() {
             const host = getActiveHost();
@@ -1443,7 +1571,15 @@
                 rate_limit_burst: parseInt(document.getElementById('setting-rate-burst')?.value || '50', 10),
                 awake_enabled: document.getElementById('setting-awake-enabled') ? document.getElementById('setting-awake-enabled').checked : true,
                 awake_interval_seconds: parseFloat(document.getElementById('setting-awake-interval')?.value || '540'),
+                advanced_security_enabled: document.getElementById('setting-adv-sec-enabled') ? document.getElementById('setting-adv-sec-enabled').checked : true,
+                identity_protection_mode: document.getElementById('setting-id-mode') ? document.getElementById('setting-id-mode').value : 'strict',
+                strict_input_validation: document.getElementById('setting-strict-input') ? document.getElementById('setting-strict-input').checked : true,
+                credit_check_enabled: document.getElementById('setting-credit-check') ? document.getElementById('setting-credit-check').checked : true,
+                default_client_credits: parseInt(document.getElementById('setting-default-credits')?.value || '1000', 10),
+                credits_per_proxy_request: parseInt(document.getElementById('setting-proxy-cost')?.value || '1', 10),
+                credits_per_queue_request: parseInt(document.getElementById('setting-queue-cost')?.value || '2', 10),
             };
+
 
             if (!payload.blast_api_key_1 && !payload.blast_api_key_2) {
                 showSettingsAlert('error', 'At least one Blast Client API Key must be provided.');
