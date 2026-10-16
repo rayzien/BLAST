@@ -150,3 +150,4 @@ RULES_CATALOG["SEC-0144"] = {"id": "SEC-0144", "category": "identity_protection"
 RULES_CATALOG["SEC-0145"] = {"id": "SEC-0145", "category": "identity_protection", "severity": "HIGH", "description": "reject anonymous identity assumption in strict mode (variant 2)", "active": True}
 RULES_CATALOG["SEC-0146"] = {"id": "SEC-0146", "category": "identity_protection", "severity": "HIGH", "description": "bind client identity to authorized API key prefix (variant 2)", "active": True}
 RULES_CATALOG["SEC-0147"] = {"id": "SEC-0147", "category": "identity_protection", "severity": "HIGH", "description": "validate constant-time digest comparison to prevent timing leaks (variant 2)", "active": True}
+RULES_CATALOG["SEC-0148"] = {"id": "SEC-0148", "category": "input_guard", "severity": "HIGH", "description": "enforce maximum JSON payload nesting depth limit of 10 (variant 2)", "active": True}
