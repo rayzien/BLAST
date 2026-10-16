@@ -18,3 +18,4 @@ RULES_CATALOG["SEC-0012"] = {"id": "SEC-0012", "category": "sql_injection", "sev
 RULES_CATALOG["SEC-0013"] = {"id": "SEC-0013", "category": "sql_injection", "severity": "CRITICAL", "description": "detect blind boolean-based injection heuristic", "active": True}
 RULES_CATALOG["SEC-0014"] = {"id": "SEC-0014", "category": "sql_injection", "severity": "CRITICAL", "description": "detect time-based delay injection pg_sleep benchmark", "active": True}
 RULES_CATALOG["SEC-0015"] = {"id": "SEC-0015", "category": "sql_injection", "severity": "CRITICAL", "description": "detect out-of-band DNS exfiltration attempt", "active": True}
+RULES_CATALOG["SEC-0016"] = {"id": "SEC-0016", "category": "sql_injection", "severity": "CRITICAL", "description": "detect comment delimiter sequence in query parameter", "active": True}
