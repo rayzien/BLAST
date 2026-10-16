@@ -237,3 +237,4 @@ RULES_CATALOG["SEC-0231"] = {"id": "SEC-0231", "category": "identity_protection"
 RULES_CATALOG["SEC-0232"] = {"id": "SEC-0232", "category": "identity_protection", "severity": "HIGH", "description": "strip spoofed X-Blast-Role permission header (variant 3)", "active": True}
 RULES_CATALOG["SEC-0233"] = {"id": "SEC-0233", "category": "identity_protection", "severity": "HIGH", "description": "enforce timestamp freshness window under 300 seconds (variant 3)", "active": True}
 RULES_CATALOG["SEC-0234"] = {"id": "SEC-0234", "category": "identity_protection", "severity": "HIGH", "description": "prevent replay attack via LRU nonce cache tracking (variant 3)", "active": True}
+RULES_CATALOG["SEC-0235"] = {"id": "SEC-0235", "category": "identity_protection", "severity": "HIGH", "description": "validate client IP subnet session continuity (variant 3)", "active": True}
