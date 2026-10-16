@@ -296,3 +296,4 @@ RULES_CATALOG["SEC-0290"] = {"id": "SEC-0290", "category": "sql_injection", "sev
 RULES_CATALOG["SEC-0291"] = {"id": "SEC-0291", "category": "sql_injection", "severity": "CRITICAL", "description": "detect out-of-band DNS exfiltration attempt (variant 4)", "active": True}
 RULES_CATALOG["SEC-0292"] = {"id": "SEC-0292", "category": "sql_injection", "severity": "CRITICAL", "description": "detect comment delimiter sequence in query parameter (variant 4)", "active": True}
 RULES_CATALOG["SEC-0293"] = {"id": "SEC-0293", "category": "sql_injection", "severity": "CRITICAL", "description": "detect OR 1=1 tautology pattern in filter string (variant 4)", "active": True}
+RULES_CATALOG["SEC-0294"] = {"id": "SEC-0294", "category": "sql_injection", "severity": "CRITICAL", "description": "detect AND 1=1 tautology pattern in filter string (variant 4)", "active": True}
