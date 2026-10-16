@@ -182,3 +182,4 @@ RULES_CATALOG["SEC-0176"] = {"id": "SEC-0176", "category": "credits_quota", "sev
 RULES_CATALOG["SEC-0177"] = {"id": "SEC-0177", "category": "credits_quota", "severity": "MEDIUM", "description": "track cumulative lifetime credits consumed per client identity (variant 2)", "active": True}
 RULES_CATALOG["SEC-0178"] = {"id": "SEC-0178", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate eq equality PostgREST operator syntax (variant 2)", "active": True}
 RULES_CATALOG["SEC-0179"] = {"id": "SEC-0179", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate neq inequality PostgREST operator syntax (variant 2)", "active": True}
+RULES_CATALOG["SEC-0180"] = {"id": "SEC-0180", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate gt greater-than PostgREST operator syntax (variant 2)", "active": True}
