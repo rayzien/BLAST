@@ -312,3 +312,4 @@ RULES_CATALOG["SEC-0306"] = {"id": "SEC-0306", "category": "sql_injection", "sev
 RULES_CATALOG["SEC-0307"] = {"id": "SEC-0307", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block __proto__ root object manipulation key (variant 4)", "active": True}
 RULES_CATALOG["SEC-0308"] = {"id": "SEC-0308", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block constructor property prototype chain pollution (variant 4)", "active": True}
 RULES_CATALOG["SEC-0309"] = {"id": "SEC-0309", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block prototype descriptor override attempt (variant 4)", "active": True}
+RULES_CATALOG["SEC-0310"] = {"id": "SEC-0310", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block Object.prototype pollution in JSON deserialization (variant 4)", "active": True}
