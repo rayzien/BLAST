@@ -16,5 +16,13 @@
   "rate_limit_burst": 50,
   "mesh_routing_enabled": true,
   "awake_enabled": true,
-  "awake_interval_seconds": 540.0
+  "awake_interval_seconds": 540.0,
+  "advanced_security_enabled": true,
+  "identity_protection_mode": "strict",
+  "strict_input_validation": true,
+  "credit_check_enabled": true,
+  "default_client_credits": 1000,
+  "credits_per_proxy_request": 1,
+  "credits_per_queue_request": 2
 }
+
