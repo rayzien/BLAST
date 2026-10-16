@@ -227,3 +227,4 @@ RULES_CATALOG["SEC-0221"] = {"id": "SEC-0221", "category": "prototype_pollution"
 RULES_CATALOG["SEC-0222"] = {"id": "SEC-0222", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block __lookupSetter__ prototype traversal (variant 3)", "active": True}
 RULES_CATALOG["SEC-0223"] = {"id": "SEC-0223", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block symbol-based property pollution attempt (variant 3)", "active": True}
 RULES_CATALOG["SEC-0224"] = {"id": "SEC-0224", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block nested prototype tampering via deep path traversal (variant 3)", "active": True}
+RULES_CATALOG["SEC-0225"] = {"id": "SEC-0225", "category": "identity_protection", "severity": "HIGH", "description": "enforce strict HMAC-SHA256 client token verification (variant 3)", "active": True}
