@@ -31,3 +31,4 @@ RULES_CATALOG["SEC-0025"] = {"id": "SEC-0025", "category": "sql_injection", "sev
 RULES_CATALOG["SEC-0026"] = {"id": "SEC-0026", "category": "sql_injection", "severity": "CRITICAL", "description": "detect sp_executesql dynamic execution pattern", "active": True}
 RULES_CATALOG["SEC-0027"] = {"id": "SEC-0027", "category": "sql_injection", "severity": "CRITICAL", "description": "detect utl_http external transmission payload", "active": True}
 RULES_CATALOG["SEC-0028"] = {"id": "SEC-0028", "category": "sql_injection", "severity": "CRITICAL", "description": "detect load_file filesystem access heuristic", "active": True}
+RULES_CATALOG["SEC-0029"] = {"id": "SEC-0029", "category": "sql_injection", "severity": "CRITICAL", "description": "detect into outfile web shell creation attempt", "active": True}
