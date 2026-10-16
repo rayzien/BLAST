@@ -71,3 +71,4 @@ RULES_CATALOG["SEC-0065"] = {"id": "SEC-0065", "category": "input_guard", "sever
 RULES_CATALOG["SEC-0066"] = {"id": "SEC-0066", "category": "input_guard", "severity": "HIGH", "description": "block bash command execution chaining in payload parameters", "active": True}
 RULES_CATALOG["SEC-0067"] = {"id": "SEC-0067", "category": "input_guard", "severity": "HIGH", "description": "block curl and wget command execution heuristics", "active": True}
 RULES_CATALOG["SEC-0068"] = {"id": "SEC-0068", "category": "input_guard", "severity": "HIGH", "description": "block netcat reverse shell heuristic sequence", "active": True}
+RULES_CATALOG["SEC-0069"] = {"id": "SEC-0069", "category": "input_guard", "severity": "HIGH", "description": "block python inline execution invocation in payloads", "active": True}
