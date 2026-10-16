@@ -414,3 +414,4 @@ RULES_CATALOG["SEC-0408"] = {"id": "SEC-0408", "category": "prototype_pollution"
 RULES_CATALOG["SEC-0409"] = {"id": "SEC-0409", "category": "identity_protection", "severity": "HIGH", "description": "enforce strict HMAC-SHA256 client token verification (variant 5)", "active": True}
 RULES_CATALOG["SEC-0410"] = {"id": "SEC-0410", "category": "identity_protection", "severity": "HIGH", "description": "strip spoofed X-Blast-Client-Id inbound header (variant 5)", "active": True}
 RULES_CATALOG["SEC-0411"] = {"id": "SEC-0411", "category": "identity_protection", "severity": "HIGH", "description": "strip spoofed X-Blast-Identity inbound header (variant 5)", "active": True}
+RULES_CATALOG["SEC-0412"] = {"id": "SEC-0412", "category": "identity_protection", "severity": "HIGH", "description": "strip spoofed X-User-Id user context header (variant 5)", "active": True}
