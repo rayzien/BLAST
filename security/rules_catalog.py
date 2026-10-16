@@ -25,3 +25,4 @@ RULES_CATALOG["SEC-0019"] = {"id": "SEC-0019", "category": "sql_injection", "sev
 RULES_CATALOG["SEC-0020"] = {"id": "SEC-0020", "category": "sql_injection", "severity": "CRITICAL", "description": "detect pg_catalog metadata extraction pattern", "active": True}
 RULES_CATALOG["SEC-0021"] = {"id": "SEC-0021", "category": "sql_injection", "severity": "CRITICAL", "description": "detect version fingerprinting database query", "active": True}
 RULES_CATALOG["SEC-0022"] = {"id": "SEC-0022", "category": "sql_injection", "severity": "CRITICAL", "description": "detect cast operator injection to arbitrary types", "active": True}
+RULES_CATALOG["SEC-0023"] = {"id": "SEC-0023", "category": "sql_injection", "severity": "CRITICAL", "description": "detect hex-encoded string literal SQL construct", "active": True}
