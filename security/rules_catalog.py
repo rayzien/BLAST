@@ -77,3 +77,4 @@ RULES_CATALOG["SEC-0071"] = {"id": "SEC-0071", "category": "credits_quota", "sev
 RULES_CATALOG["SEC-0072"] = {"id": "SEC-0072", "category": "credits_quota", "severity": "MEDIUM", "description": "enforce atomic credit balance check before job queueing", "active": True}
 RULES_CATALOG["SEC-0073"] = {"id": "SEC-0073", "category": "credits_quota", "severity": "MEDIUM", "description": "deduct configurable credit cost on successful proxy egress", "active": True}
 RULES_CATALOG["SEC-0074"] = {"id": "SEC-0074", "category": "credits_quota", "severity": "MEDIUM", "description": "deduct configurable credit cost on successful enqueue", "active": True}
+RULES_CATALOG["SEC-0075"] = {"id": "SEC-0075", "category": "credits_quota", "severity": "MEDIUM", "description": "emit HTTP 402 Payment Required on credit exhaustion", "active": True}
