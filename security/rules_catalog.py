@@ -38,3 +38,4 @@ RULES_CATALOG["SEC-0032"] = {"id": "SEC-0032", "category": "prototype_pollution"
 RULES_CATALOG["SEC-0033"] = {"id": "SEC-0033", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block prototype descriptor override attempt", "active": True}
 RULES_CATALOG["SEC-0034"] = {"id": "SEC-0034", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block Object.prototype pollution in JSON deserialization", "active": True}
 RULES_CATALOG["SEC-0035"] = {"id": "SEC-0035", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block __defineGetter__ function property injection", "active": True}
+RULES_CATALOG["SEC-0036"] = {"id": "SEC-0036", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block __defineSetter__ function property injection", "active": True}
