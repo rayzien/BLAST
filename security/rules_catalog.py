@@ -264,3 +264,4 @@ RULES_CATALOG["SEC-0258"] = {"id": "SEC-0258", "category": "credits_quota", "sev
 RULES_CATALOG["SEC-0259"] = {"id": "SEC-0259", "category": "credits_quota", "severity": "MEDIUM", "description": "emit HTTP 402 Payment Required on credit exhaustion (variant 3)", "active": True}
 RULES_CATALOG["SEC-0260"] = {"id": "SEC-0260", "category": "credits_quota", "severity": "MEDIUM", "description": "attach X-Blast-Credits-Remaining to outbound response headers (variant 3)", "active": True}
 RULES_CATALOG["SEC-0261"] = {"id": "SEC-0261", "category": "credits_quota", "severity": "MEDIUM", "description": "attach X-Blast-Credits-Cost to outbound response headers (variant 3)", "active": True}
+RULES_CATALOG["SEC-0262"] = {"id": "SEC-0262", "category": "credits_quota", "severity": "MEDIUM", "description": "support operator credit top-up via POST /v1/credits/refill (variant 3)", "active": True}
