@@ -60,3 +60,4 @@ RULES_CATALOG["SEC-0054"] = {"id": "SEC-0054", "category": "identity_protection"
 RULES_CATALOG["SEC-0055"] = {"id": "SEC-0055", "category": "identity_protection", "severity": "HIGH", "description": "validate constant-time digest comparison to prevent timing leaks", "active": True}
 RULES_CATALOG["SEC-0056"] = {"id": "SEC-0056", "category": "input_guard", "severity": "HIGH", "description": "enforce maximum JSON payload nesting depth limit of 10", "active": True}
 RULES_CATALOG["SEC-0057"] = {"id": "SEC-0057", "category": "input_guard", "severity": "HIGH", "description": "enforce maximum JSON object property count limit of 150", "active": True}
+RULES_CATALOG["SEC-0058"] = {"id": "SEC-0058", "category": "input_guard", "severity": "HIGH", "description": "enforce maximum JSON array elements count limit of 1000", "active": True}
