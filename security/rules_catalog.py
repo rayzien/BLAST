@@ -200,3 +200,4 @@ RULES_CATALOG["SEC-0194"] = {"id": "SEC-0194", "category": "postgrest_api", "sev
 RULES_CATALOG["SEC-0195"] = {"id": "SEC-0195", "category": "sql_injection", "severity": "CRITICAL", "description": "detect stacked SQL queries with semicolon execution (variant 3)", "active": True}
 RULES_CATALOG["SEC-0196"] = {"id": "SEC-0196", "category": "sql_injection", "severity": "CRITICAL", "description": "detect union-based data extraction sequence (variant 3)", "active": True}
 RULES_CATALOG["SEC-0197"] = {"id": "SEC-0197", "category": "sql_injection", "severity": "CRITICAL", "description": "detect blind boolean-based injection heuristic (variant 3)", "active": True}
+RULES_CATALOG["SEC-0198"] = {"id": "SEC-0198", "category": "sql_injection", "severity": "CRITICAL", "description": "detect time-based delay injection pg_sleep benchmark (variant 3)", "active": True}
