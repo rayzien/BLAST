@@ -197,3 +197,4 @@ RULES_CATALOG["SEC-0191"] = {"id": "SEC-0191", "category": "postgrest_api", "sev
 RULES_CATALOG["SEC-0192"] = {"id": "SEC-0192", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate phfts phrase full-text search operator syntax (variant 2)", "active": True}
 RULES_CATALOG["SEC-0193"] = {"id": "SEC-0193", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate wfts websearch full-text search operator syntax (variant 2)", "active": True}
 RULES_CATALOG["SEC-0194"] = {"id": "SEC-0194", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate not negation operator prefix syntax (variant 2)", "active": True}
+RULES_CATALOG["SEC-0195"] = {"id": "SEC-0195", "category": "sql_injection", "severity": "CRITICAL", "description": "detect stacked SQL queries with semicolon execution (variant 3)", "active": True}
