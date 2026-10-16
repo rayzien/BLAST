@@ -396,3 +396,4 @@ RULES_CATALOG["SEC-0390"] = {"id": "SEC-0390", "category": "sql_injection", "sev
 RULES_CATALOG["SEC-0391"] = {"id": "SEC-0391", "category": "sql_injection", "severity": "CRITICAL", "description": "detect hex-encoded string literal SQL construct (variant 5)", "active": True}
 RULES_CATALOG["SEC-0392"] = {"id": "SEC-0392", "category": "sql_injection", "severity": "CRITICAL", "description": "detect null byte injection inside string literal (variant 5)", "active": True}
 RULES_CATALOG["SEC-0393"] = {"id": "SEC-0393", "category": "sql_injection", "severity": "CRITICAL", "description": "detect xp_cmdshell procedure invocation pattern (variant 5)", "active": True}
+RULES_CATALOG["SEC-0394"] = {"id": "SEC-0394", "category": "sql_injection", "severity": "CRITICAL", "description": "detect sp_executesql dynamic execution pattern (variant 5)", "active": True}
