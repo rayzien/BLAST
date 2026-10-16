@@ -352,3 +352,4 @@ RULES_CATALOG["SEC-0346"] = {"id": "SEC-0346", "category": "input_guard", "sever
 RULES_CATALOG["SEC-0347"] = {"id": "SEC-0347", "category": "credits_quota", "severity": "MEDIUM", "description": "enforce atomic credit balance check before proxy forward (variant 4)", "active": True}
 RULES_CATALOG["SEC-0348"] = {"id": "SEC-0348", "category": "credits_quota", "severity": "MEDIUM", "description": "enforce atomic credit balance check before job queueing (variant 4)", "active": True}
 RULES_CATALOG["SEC-0349"] = {"id": "SEC-0349", "category": "credits_quota", "severity": "MEDIUM", "description": "deduct configurable credit cost on successful proxy egress (variant 4)", "active": True}
+RULES_CATALOG["SEC-0350"] = {"id": "SEC-0350", "category": "credits_quota", "severity": "MEDIUM", "description": "deduct configurable credit cost on successful enqueue (variant 4)", "active": True}
