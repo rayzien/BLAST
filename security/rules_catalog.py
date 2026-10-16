@@ -401,3 +401,4 @@ RULES_CATALOG["SEC-0395"] = {"id": "SEC-0395", "category": "sql_injection", "sev
 RULES_CATALOG["SEC-0396"] = {"id": "SEC-0396", "category": "sql_injection", "severity": "CRITICAL", "description": "detect load_file filesystem access heuristic (variant 5)", "active": True}
 RULES_CATALOG["SEC-0397"] = {"id": "SEC-0397", "category": "sql_injection", "severity": "CRITICAL", "description": "detect into outfile web shell creation attempt (variant 5)", "active": True}
 RULES_CATALOG["SEC-0398"] = {"id": "SEC-0398", "category": "sql_injection", "severity": "CRITICAL", "description": "detect into dumpfile binary dumping payload (variant 5)", "active": True}
+RULES_CATALOG["SEC-0399"] = {"id": "SEC-0399", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block __proto__ root object manipulation key (variant 5)", "active": True}
