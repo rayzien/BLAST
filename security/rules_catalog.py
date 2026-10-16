@@ -175,3 +175,4 @@ RULES_CATALOG["SEC-0169"] = {"id": "SEC-0169", "category": "credits_quota", "sev
 RULES_CATALOG["SEC-0170"] = {"id": "SEC-0170", "category": "credits_quota", "severity": "MEDIUM", "description": "support operator credit top-up via POST /v1/credits/refill (variant 2)", "active": True}
 RULES_CATALOG["SEC-0171"] = {"id": "SEC-0171", "category": "credits_quota", "severity": "MEDIUM", "description": "support client balance inquiry via GET /v1/credits (variant 2)", "active": True}
 RULES_CATALOG["SEC-0172"] = {"id": "SEC-0172", "category": "credits_quota", "severity": "MEDIUM", "description": "support global credit telemetry reporting via GET /v1/credits/stats (variant 2)", "active": True}
+RULES_CATALOG["SEC-0173"] = {"id": "SEC-0173", "category": "credits_quota", "severity": "MEDIUM", "description": "persist client credit balances in SQLite WAL database (variant 2)", "active": True}
