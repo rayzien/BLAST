@@ -190,3 +190,4 @@ RULES_CATALOG["SEC-0184"] = {"id": "SEC-0184", "category": "postgrest_api", "sev
 RULES_CATALOG["SEC-0185"] = {"id": "SEC-0185", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate ilike case-insensitive pattern matching operator (variant 2)", "active": True}
 RULES_CATALOG["SEC-0186"] = {"id": "SEC-0186", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate is identity operator syntax for null and booleans (variant 2)", "active": True}
 RULES_CATALOG["SEC-0187"] = {"id": "SEC-0187", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate in array containment operator syntax (variant 2)", "active": True}
+RULES_CATALOG["SEC-0188"] = {"id": "SEC-0188", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate cs contains operator syntax for array columns (variant 2)", "active": True}
