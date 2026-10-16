@@ -12,6 +12,9 @@ from security.auth import Authenticator
 from security.rate_limiter import TokenBucketRateLimiter
 from security.firewall import Firewall
 from security.checker import SecurityChecker
+from security.identity import IdentityProtectionGuard
+from security.input_guard import StrictInputValidator
+from security.credits import CreditManager
 from job_queue.manager import QueueManager
 from supabase.client import SupabaseClient
 from supabase.proxy import ProxyHandler
@@ -42,6 +45,13 @@ def create_app(
     rate_limiter = TokenBucketRateLimiter(cfg)
     firewall = Firewall(cfg)
     sec_checker = security_checker or SecurityChecker(cfg)
+    identity_guard = IdentityProtectionGuard(cfg)
+    input_guard = StrictInputValidator(cfg)
+    credit_mgr = CreditManager(
+        cfg=cfg,
+        default_credits=getattr(cfg, "DEFAULT_CLIENT_CREDITS", 1000),
+        enabled=getattr(cfg, "CREDIT_CHECK_ENABLED", True),
+    )
     queue_manager = QueueManager(cfg, storage=storage)
     supabase_client = supabase_client or SupabaseClient(cfg)
     proxy_handler = ProxyHandler(cfg, client=supabase_client, firewall=firewall)
@@ -71,6 +81,9 @@ def create_app(
         cluster_manager=cluster_mgr,
         awake_engine=awake,
         mesh_router=smart_mesh,
+        credit_manager=credit_mgr,
+        identity_guard=identity_guard,
+        input_guard=input_guard,
     )
 
     # Attach components to app context
@@ -82,6 +95,10 @@ def create_app(
     app.config["BLAST_MESH_ROUTER"] = smart_mesh
     app.config["BLAST_PERSISTENCE_MANAGER"] = persistence_mgr
     app.config["BLAST_AWAKE_ENGINE"] = awake
+    app.config["BLAST_IDENTITY_GUARD"] = identity_guard
+    app.config["BLAST_INPUT_GUARD"] = input_guard
+    app.config["BLAST_CREDIT_MANAGER"] = credit_mgr
+
 
     # -------------------------------------------------------------
     # Security Middleware
@@ -93,15 +110,18 @@ def create_app(
             resp = Response(status=200)
             resp.headers["Access-Control-Allow-Origin"] = "*"
             resp.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-            resp.headers["Access-Control-Allow-Headers"] = "Content-Type, X-Blast-Key, X-Idempotency-Key, X-Priority, Authorization"
+            resp.headers["Access-Control-Allow-Headers"] = "Content-Type, X-Blast-Key, X-Idempotency-Key, X-Priority, Authorization, X-Blast-Identity-Token, X-Blast-Nonce, X-Blast-Timestamp"
             resp.headers["Access-Control-Max-Age"] = "86400"
             return resp
 
-        # Public endpoints (health check, web GUI in pages/, cluster/mesh heartbeats, live logs, test pathway, settings, awake engine)
-        if request.path in ("/health", "/", "/gui", "/v1/test/pathway", "/v1/settings", "/v1/awake", "/awake") or request.path.startswith(("/v1/cluster/heartbeat", "/pages", "/v1/logs", "/v1/settings", "/v1/awake")):
+        # Public endpoints (health check, web GUI in pages/, cluster/mesh heartbeats, live logs, test pathway, settings, awake engine, credit stats)
+        if request.path in ("/health", "/", "/gui", "/v1/test/pathway", "/v1/settings", "/v1/awake", "/awake", "/v1/credits/stats") or request.path.startswith(("/v1/cluster/heartbeat", "/pages", "/v1/logs", "/v1/settings", "/v1/awake", "/v1/credits/stats")):
             return None
 
-        # 1. Firewall validation (methods, payload size, path traversal)
+        # 1. Identity Protection Guard: strip untrusted/spoofed identity headers
+        sanitized_headers = identity_guard.sanitize_inbound_identity_headers(dict(request.headers))
+
+        # 2. Firewall validation (methods, payload size, path traversal)
         content_len = request.content_length
         is_valid, err_msg = firewall.validate_request(
             method=request.method,
@@ -112,17 +132,49 @@ def create_app(
             logger.security(f"Blocked request {request.method} {request.path}: {err_msg}")
             return jsonify({"error": "Security check failed", "details": err_msg}), 400
 
-        # 2. Authentication check
-        req_headers = dict(request.headers)
+        # 3. Strict Input Guard: validate against prototype pollution, control characters, command injection
+        body_bytes = request.get_data() if request.data else None
+        is_in_ok, in_err_code, in_err_details = input_guard.validate_inbound_input(
+            method=request.method,
+            path=request.path,
+            headers=sanitized_headers,
+            query_params=dict(request.args),
+            body=body_bytes,
+        )
+        if not is_in_ok:
+            logger.security(f"Input Guard blocked request {request.method} {request.path}: {in_err_code} - {in_err_details}")
+            return jsonify({
+                "error": "Bad Request - Input Guard Rejection",
+                "code": in_err_code,
+                "details": in_err_details,
+            }), 400
+
+        # 4. Authentication check
         query_dict = dict(request.args)
-        is_auth, client_id, auth_err = authenticator.authenticate(req_headers, query_dict)
+        is_auth, client_id, auth_err = authenticator.authenticate(sanitized_headers, query_dict)
         if not is_auth:
             logger.security(f"Authentication failed for {request.remote_addr}: {auth_err}")
             return jsonify({"error": "Unauthorized", "details": auth_err}), 401
 
+        # 5. Identity Verification Guard (Anti-Identity Theft & Session Integrity)
+        is_id_ok, id_err = identity_guard.verify_request_identity(
+            client_id=client_id or "anonymous",
+            secret_key=cfg.API_KEYS[0] if cfg.API_KEYS else None,
+            headers=sanitized_headers,
+            remote_ip=request.remote_addr,
+            user_agent=request.headers.get("User-Agent"),
+        )
+        if not is_id_ok:
+            logger.security(f"Identity protection violation for {request.remote_addr}: {id_err}")
+            return jsonify({
+                "error": "Forbidden - Identity Verification Failed",
+                "code": "IDENTITY_PROTECTION_VIOLATION",
+                "details": id_err,
+            }), 403
+
         request.environ["blast_client_id"] = client_id or "anonymous"
 
-        # 3. Rate Limiting check
+        # 6. Rate Limiting check
         identifier = client_id or request.remote_addr or "client-default"
         allowed, retry_after, remaining = rate_limiter.check(identifier)
         if not allowed:
@@ -141,8 +193,9 @@ def create_app(
     def add_cors_headers(response):
         response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-Blast-Key, X-Idempotency-Key, X-Priority, Authorization"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-Blast-Key, X-Idempotency-Key, X-Priority, Authorization, X-Blast-Identity-Token, X-Blast-Nonce, X-Blast-Timestamp"
         return response
+
 
     # -------------------------------------------------------------
     # Web GUI Endpoints (Serving from pages/ folder)
@@ -451,7 +504,23 @@ def create_app(
                 except Exception as exc:
                     logger.warn("MESH", f"Peer forward failed ({exc}), falling back to local queue.")
 
-        # 3. Local Enqueue Execution
+        # 3. Credit Quota & Balance Check
+        if cfg.CREDIT_CHECK_ENABLED and client_id != "anonymous":
+            cost = cfg.CREDITS_PER_QUEUE_REQUEST
+            has_credits, cur_bal, msg = credit_mgr.check_credits(client_id, cost=cost)
+            if not has_credits:
+                logger.security(f"Credit check failed for {client_id}: {msg} (balance: {cur_bal})")
+                return jsonify({
+                    "error": "Payment Required - Insufficient Credits",
+                    "code": "INSUFFICIENT_CREDITS",
+                    "client_id": client_id,
+                    "remaining_credits": cur_bal,
+                    "required_credits": cost,
+                    "message": "Client credit quota exhausted. Refill credits or contact administrator."
+                }), 402
+            credit_mgr.deduct_credits(client_id, cost=cost, reason="enqueue_request")
+
+        # 4. Local Enqueue Execution
         job, is_new = queue_manager.enqueue(
             method=method,
             path=clean_path,
@@ -465,7 +534,7 @@ def create_app(
 
         logger.queue(f"Verified & enqueued request {method} {clean_path} -> job {job.id} (new={is_new})")
 
-        return jsonify({
+        resp_data = {
             "status": "queued" if is_new else "duplicate_idempotent",
             "job_id": job.id,
             "is_new": is_new,
@@ -473,7 +542,14 @@ def create_app(
             "routed_via": "local",
             "poll_url": f"/v1/jobs/{job.id}",
             "job": job.to_dict(),
-        }), 202
+        }
+        if client_id != "anonymous":
+            resp_data["remaining_credits"] = credit_mgr.get_balance(client_id)
+        flask_resp = jsonify(resp_data)
+        if client_id != "anonymous":
+            flask_resp.headers["X-Blast-Credits-Remaining"] = str(credit_mgr.get_balance(client_id))
+        return flask_resp, 202
+
 
     @app.route("/v1/jobs/<job_id>", methods=["GET"])
     def get_job(job_id: str):
@@ -589,7 +665,24 @@ def create_app(
                 except Exception as exc:
                     logger.warn("MESH", f"Peer proxy failed ({exc}), falling back to local proxy execution.")
 
-        # 3. Local Upstream Execution to Supabase
+        # 3. Credit Quota & Balance Check
+        client_id = request.environ.get("blast_client_id", "anonymous")
+        if cfg.CREDIT_CHECK_ENABLED and client_id != "anonymous":
+            cost = cfg.CREDITS_PER_PROXY_REQUEST
+            has_credits, cur_bal, msg = credit_mgr.check_credits(client_id, cost=cost)
+            if not has_credits:
+                logger.security(f"Credit check failed for {client_id}: {msg} (balance: {cur_bal})")
+                return jsonify({
+                    "error": "Payment Required - Insufficient Credits",
+                    "code": "INSUFFICIENT_CREDITS",
+                    "client_id": client_id,
+                    "remaining_credits": cur_bal,
+                    "required_credits": cost,
+                    "message": "Client credit quota exhausted. Refill credits or contact administrator."
+                }), 402
+            credit_mgr.deduct_credits(client_id, cost=cost, reason="proxy_request")
+
+        # 4. Local Upstream Execution to Supabase
         status_code, resp_headers, resp_body = proxy_handler.forward(
             method=request.method,
             supabase_path=clean_path,
@@ -598,7 +691,7 @@ def create_app(
             body=body,
         )
 
-        # 4. Outbound Response Verification & Sanitization (preventing DB leaks)
+        # 5. Outbound Response Verification & Sanitization (preventing DB leaks)
         clean_status, clean_headers, clean_body = sec_checker.verify_and_sanitize_response(
             status_code=status_code,
             response_headers=resp_headers,
@@ -614,9 +707,13 @@ def create_app(
             if k.lower() in ("preference-applied", "content-range", "x-total-count", "x-content-type-options", "x-frame-options", "x-xss-protection", "x-blast-security-verified"):
                 flask_resp.headers[k] = v
 
+        if client_id != "anonymous":
+            flask_resp.headers["X-Blast-Credits-Remaining"] = str(credit_mgr.get_balance(client_id))
+
         flask_resp.headers["X-Blast-Routed-Via"] = "local"
         logger.pathway(f"[PROXY_EGRESS] Delivered {request.method} {clean_path} -> HTTP {clean_status}")
         return flask_resp
+
 
     # -------------------------------------------------------------
     # Settings & Persistence Manager Endpoints
@@ -688,4 +785,70 @@ def create_app(
             "current_status": awake.get_status(),
         }), 200
 
+    # -------------------------------------------------------------
+    # Credit Quota & Balance Endpoints
+    # -------------------------------------------------------------
+    @app.route("/v1/credits", methods=["GET"])
+    def get_client_credits():
+        """Get credit balance and quota details for the calling client."""
+        client_id = request.environ.get("blast_client_id")
+        if not client_id or client_id == "anonymous":
+            req_headers = dict(request.headers)
+            is_auth, cid, _ = authenticator.authenticate(req_headers, dict(request.args))
+            client_id = cid or "anonymous"
+        bal = credit_mgr.get_balance(client_id)
+        return jsonify({
+            "client_id": client_id,
+            "balance": bal,
+            "credit_check_enabled": cfg.CREDIT_CHECK_ENABLED,
+            "credits_per_proxy_request": cfg.CREDITS_PER_PROXY_REQUEST,
+            "credits_per_queue_request": cfg.CREDITS_PER_QUEUE_REQUEST,
+        }), 200
+
+    @app.route("/v1/credits/refill", methods=["POST"])
+    def refill_client_credits():
+        """Refill credit balance for a specified client."""
+        payload = request.get_json(silent=True) or {}
+        target_client = payload.get("client_id") or request.environ.get("blast_client_id", "client-default")
+        try:
+            amount = int(payload.get("amount", 500))
+        except (ValueError, TypeError):
+            amount = 500
+        new_balance = credit_mgr.refill_credits(target_client, amount)
+        return jsonify({
+            "status": "success",
+            "client_id": target_client,
+            "amount_added": amount,
+            "new_balance": new_balance,
+        }), 200
+
+    @app.route("/v1/credits/stats", methods=["GET"])
+    def get_credit_stats():
+        """Global credit quota statistics across all registered clients."""
+        return jsonify(credit_mgr.get_stats()), 200
+
+    # -------------------------------------------------------------
+    # Transparent Supabase Pass-Through Endpoints
+    # -------------------------------------------------------------
+    @app.route("/rest/v1/<path:target_path>", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+    def transparent_rest_proxy(target_path: str):
+        return proxy_request(f"rest/v1/{target_path}")
+
+    @app.route("/auth/v1/<path:target_path>", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+    def transparent_auth_proxy(target_path: str):
+        return proxy_request(f"auth/v1/{target_path}")
+
+    @app.route("/storage/v1/<path:target_path>", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+    def transparent_storage_proxy(target_path: str):
+        return proxy_request(f"storage/v1/{target_path}")
+
+    @app.route("/graphql/v1/<path:target_path>", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+    def transparent_graphql_proxy(target_path: str):
+        return proxy_request(f"graphql/v1/{target_path}")
+
+    @app.route("/functions/v1/<path:target_path>", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+    def transparent_functions_proxy(target_path: str):
+        return proxy_request(f"functions/v1/{target_path}")
+
     return app
+
