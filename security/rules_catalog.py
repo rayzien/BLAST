@@ -65,3 +65,4 @@ RULES_CATALOG["SEC-0059"] = {"id": "SEC-0059", "category": "input_guard", "sever
 RULES_CATALOG["SEC-0060"] = {"id": "SEC-0060", "category": "input_guard", "severity": "HIGH", "description": "block null byte sequence in URL path components", "active": True}
 RULES_CATALOG["SEC-0061"] = {"id": "SEC-0061", "category": "input_guard", "severity": "HIGH", "description": "block path traversal dot-dot-slash sequence", "active": True}
 RULES_CATALOG["SEC-0062"] = {"id": "SEC-0062", "category": "input_guard", "severity": "HIGH", "description": "block reverse directory traversal dot-dot-backslash sequence", "active": True}
+RULES_CATALOG["SEC-0063"] = {"id": "SEC-0063", "category": "input_guard", "severity": "HIGH", "description": "block URL-encoded path traversal percent-2e sequence", "active": True}
