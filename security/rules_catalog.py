@@ -74,3 +74,4 @@ RULES_CATALOG["SEC-0068"] = {"id": "SEC-0068", "category": "input_guard", "sever
 RULES_CATALOG["SEC-0069"] = {"id": "SEC-0069", "category": "input_guard", "severity": "HIGH", "description": "block python inline execution invocation in payloads", "active": True}
 RULES_CATALOG["SEC-0070"] = {"id": "SEC-0070", "category": "input_guard", "severity": "HIGH", "description": "block subshell expansion dollar-parenthesis sequence", "active": True}
 RULES_CATALOG["SEC-0071"] = {"id": "SEC-0071", "category": "credits_quota", "severity": "MEDIUM", "description": "enforce atomic credit balance check before proxy forward", "active": True}
+RULES_CATALOG["SEC-0072"] = {"id": "SEC-0072", "category": "credits_quota", "severity": "MEDIUM", "description": "enforce atomic credit balance check before job queueing", "active": True}
