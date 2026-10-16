@@ -446,3 +446,4 @@ RULES_CATALOG["SEC-0440"] = {"id": "SEC-0440", "category": "credits_quota", "sev
 RULES_CATALOG["SEC-0441"] = {"id": "SEC-0441", "category": "credits_quota", "severity": "MEDIUM", "description": "deduct configurable credit cost on successful proxy egress (variant 5)", "active": True}
 RULES_CATALOG["SEC-0442"] = {"id": "SEC-0442", "category": "credits_quota", "severity": "MEDIUM", "description": "deduct configurable credit cost on successful enqueue (variant 5)", "active": True}
 RULES_CATALOG["SEC-0443"] = {"id": "SEC-0443", "category": "credits_quota", "severity": "MEDIUM", "description": "emit HTTP 402 Payment Required on credit exhaustion (variant 5)", "active": True}
+RULES_CATALOG["SEC-0444"] = {"id": "SEC-0444", "category": "credits_quota", "severity": "MEDIUM", "description": "attach X-Blast-Credits-Remaining to outbound response headers (variant 5)", "active": True}
