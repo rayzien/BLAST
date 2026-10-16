@@ -184,3 +184,4 @@ RULES_CATALOG["SEC-0178"] = {"id": "SEC-0178", "category": "postgrest_api", "sev
 RULES_CATALOG["SEC-0179"] = {"id": "SEC-0179", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate neq inequality PostgREST operator syntax (variant 2)", "active": True}
 RULES_CATALOG["SEC-0180"] = {"id": "SEC-0180", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate gt greater-than PostgREST operator syntax (variant 2)", "active": True}
 RULES_CATALOG["SEC-0181"] = {"id": "SEC-0181", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate gte greater-than-or-equal PostgREST operator syntax (variant 2)", "active": True}
+RULES_CATALOG["SEC-0182"] = {"id": "SEC-0182", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate lt less-than PostgREST operator syntax (variant 2)", "active": True}
