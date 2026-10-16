@@ -240,3 +240,4 @@ RULES_CATALOG["SEC-0234"] = {"id": "SEC-0234", "category": "identity_protection"
 RULES_CATALOG["SEC-0235"] = {"id": "SEC-0235", "category": "identity_protection", "severity": "HIGH", "description": "validate client IP subnet session continuity (variant 3)", "active": True}
 RULES_CATALOG["SEC-0236"] = {"id": "SEC-0236", "category": "identity_protection", "severity": "HIGH", "description": "validate user-agent device family consistency (variant 3)", "active": True}
 RULES_CATALOG["SEC-0237"] = {"id": "SEC-0237", "category": "identity_protection", "severity": "HIGH", "description": "reject anonymous identity assumption in strict mode (variant 3)", "active": True}
+RULES_CATALOG["SEC-0238"] = {"id": "SEC-0238", "category": "identity_protection", "severity": "HIGH", "description": "bind client identity to authorized API key prefix (variant 3)", "active": True}
