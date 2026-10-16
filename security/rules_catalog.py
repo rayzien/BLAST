@@ -15,3 +15,4 @@ RULES_CATALOG["SEC-0009"] = {"id": "SEC-0009", "category": "sql_injection", "sev
 RULES_CATALOG["SEC-0010"] = {"id": "SEC-0010", "category": "sql_injection", "severity": "HIGH", "active": True}
 RULES_CATALOG["SEC-0011"] = {"id": "SEC-0011", "category": "sql_injection", "severity": "CRITICAL", "description": "detect stacked SQL queries with semicolon execution", "active": True}
 RULES_CATALOG["SEC-0012"] = {"id": "SEC-0012", "category": "sql_injection", "severity": "CRITICAL", "description": "detect union-based data extraction sequence", "active": True}
+RULES_CATALOG["SEC-0013"] = {"id": "SEC-0013", "category": "sql_injection", "severity": "CRITICAL", "description": "detect blind boolean-based injection heuristic", "active": True}
