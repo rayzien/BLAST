@@ -206,3 +206,4 @@ RULES_CATALOG["SEC-0200"] = {"id": "SEC-0200", "category": "sql_injection", "sev
 RULES_CATALOG["SEC-0201"] = {"id": "SEC-0201", "category": "sql_injection", "severity": "CRITICAL", "description": "detect OR 1=1 tautology pattern in filter string (variant 3)", "active": True}
 RULES_CATALOG["SEC-0202"] = {"id": "SEC-0202", "category": "sql_injection", "severity": "CRITICAL", "description": "detect AND 1=1 tautology pattern in filter string (variant 3)", "active": True}
 RULES_CATALOG["SEC-0203"] = {"id": "SEC-0203", "category": "sql_injection", "severity": "CRITICAL", "description": "detect information_schema table enumeration query (variant 3)", "active": True}
+RULES_CATALOG["SEC-0204"] = {"id": "SEC-0204", "category": "sql_injection", "severity": "CRITICAL", "description": "detect pg_catalog metadata extraction pattern (variant 3)", "active": True}
