@@ -9,6 +9,7 @@ from .checker import SecurityChecker
 from .identity import IdentityProtectionGuard
 from .input_guard import StrictInputValidator
 from .credits import CreditManager
+from .rules_catalog import RULES_CATALOG
 
 __all__ = [
     "Authenticator",
@@ -18,5 +19,7 @@ __all__ = [
     "IdentityProtectionGuard",
     "StrictInputValidator",
     "CreditManager",
+    "RULES_CATALOG",
 ]
+
 
