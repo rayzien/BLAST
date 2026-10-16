@@ -362,3 +362,4 @@ RULES_CATALOG["SEC-0356"] = {"id": "SEC-0356", "category": "credits_quota", "sev
 RULES_CATALOG["SEC-0357"] = {"id": "SEC-0357", "category": "credits_quota", "severity": "MEDIUM", "description": "persist client credit balances in SQLite WAL database (variant 4)", "active": True}
 RULES_CATALOG["SEC-0358"] = {"id": "SEC-0358", "category": "credits_quota", "severity": "MEDIUM", "description": "provide in-memory fast caching for zero-latency credit checks (variant 4)", "active": True}
 RULES_CATALOG["SEC-0359"] = {"id": "SEC-0359", "category": "credits_quota", "severity": "MEDIUM", "description": "initialize newly seen clients with configurable default quota (variant 4)", "active": True}
+RULES_CATALOG["SEC-0360"] = {"id": "SEC-0360", "category": "credits_quota", "severity": "MEDIUM", "description": "support credit quota reset to administrative baseline (variant 4)", "active": True}
