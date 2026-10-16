@@ -302,3 +302,4 @@ RULES_CATALOG["SEC-0296"] = {"id": "SEC-0296", "category": "sql_injection", "sev
 RULES_CATALOG["SEC-0297"] = {"id": "SEC-0297", "category": "sql_injection", "severity": "CRITICAL", "description": "detect version fingerprinting database query (variant 4)", "active": True}
 RULES_CATALOG["SEC-0298"] = {"id": "SEC-0298", "category": "sql_injection", "severity": "CRITICAL", "description": "detect cast operator injection to arbitrary types (variant 4)", "active": True}
 RULES_CATALOG["SEC-0299"] = {"id": "SEC-0299", "category": "sql_injection", "severity": "CRITICAL", "description": "detect hex-encoded string literal SQL construct (variant 4)", "active": True}
+RULES_CATALOG["SEC-0300"] = {"id": "SEC-0300", "category": "sql_injection", "severity": "CRITICAL", "description": "detect null byte injection inside string literal (variant 4)", "active": True}
