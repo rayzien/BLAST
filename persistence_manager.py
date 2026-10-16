@@ -27,6 +27,9 @@ class PersistenceManager:
         cluster_manager: Optional[Any] = None,
         awake_engine: Optional[Any] = None,
         mesh_router: Optional[Any] = None,
+        credit_manager: Optional[Any] = None,
+        identity_guard: Optional[Any] = None,
+        input_guard: Optional[Any] = None,
     ):
         self.cfg = cfg or default_config
         self.env_path = env_path or os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
@@ -36,6 +39,9 @@ class PersistenceManager:
         self.cluster_manager = cluster_manager
         self.awake_engine = awake_engine
         self.mesh_router = mesh_router
+        self.credit_manager = credit_manager
+        self.identity_guard = identity_guard
+        self.input_guard = input_guard
         self._lock = threading.RLock()
 
     def get_settings(self) -> Dict[str, Any]:
@@ -107,6 +113,16 @@ class PersistenceManager:
                 "require_api_key": self.cfg.REQUIRE_API_KEY,
                 "awake_enabled": getattr(self.cfg, "AWAKE_ENABLED", True),
                 "awake_interval_seconds": getattr(self.cfg, "AWAKE_INTERVAL_SECONDS", 540.0),
+
+                # Experimental Advanced Settings & Credit System
+                "advanced_security_enabled": getattr(self.cfg, "ADVANCED_SECURITY_ENABLED", True),
+                "identity_protection_mode": getattr(self.cfg, "IDENTITY_PROTECTION_MODE", "strict"),
+                "strict_input_validation": getattr(self.cfg, "STRICT_INPUT_VALIDATION", True),
+                "credit_check_enabled": getattr(self.cfg, "CREDIT_CHECK_ENABLED", True),
+                "default_client_credits": getattr(self.cfg, "DEFAULT_CLIENT_CREDITS", 1000),
+                "credits_per_proxy_request": getattr(self.cfg, "CREDITS_PER_PROXY_REQUEST", 1),
+                "credits_per_queue_request": getattr(self.cfg, "CREDITS_PER_QUEUE_REQUEST", 2),
+
                 "env_path": self.env_path,
                 "settings_json_path": self.settings_json_path,
                 "is_persistent": os.path.exists(self.env_path) or os.path.exists(self.settings_json_path),
@@ -228,6 +244,30 @@ class PersistenceManager:
                 except (ValueError, TypeError):
                     pass
 
+            if "advanced_security_enabled" in payload:
+                env_updates["BLAST_ADVANCED_SECURITY_ENABLED"] = str(bool(payload["advanced_security_enabled"])).lower()
+            if "identity_protection_mode" in payload and payload["identity_protection_mode"]:
+                env_updates["BLAST_IDENTITY_PROTECTION_MODE"] = str(payload["identity_protection_mode"]).strip()
+            if "strict_input_validation" in payload:
+                env_updates["BLAST_STRICT_INPUT_VALIDATION"] = str(bool(payload["strict_input_validation"])).lower()
+            if "credit_check_enabled" in payload:
+                env_updates["BLAST_CREDIT_CHECK_ENABLED"] = str(bool(payload["credit_check_enabled"])).lower()
+            if "default_client_credits" in payload and payload["default_client_credits"] != "":
+                try:
+                    env_updates["BLAST_DEFAULT_CLIENT_CREDITS"] = str(int(payload["default_client_credits"]))
+                except (ValueError, TypeError):
+                    pass
+            if "credits_per_proxy_request" in payload and payload["credits_per_proxy_request"] != "":
+                try:
+                    env_updates["BLAST_CREDITS_PER_PROXY_REQUEST"] = str(int(payload["credits_per_proxy_request"]))
+                except (ValueError, TypeError):
+                    pass
+            if "credits_per_queue_request" in payload and payload["credits_per_queue_request"] != "":
+                try:
+                    env_updates["BLAST_CREDITS_PER_QUEUE_REQUEST"] = str(int(payload["credits_per_queue_request"]))
+                except (ValueError, TypeError):
+                    pass
+
             # 2. Atomic disk persistence to .env
             self._write_env_file(env_updates)
 
@@ -247,6 +287,13 @@ class PersistenceManager:
                 "mesh_routing_enabled": getattr(self.cfg, "MESH_ROUTING_ENABLED", True),
                 "awake_enabled": getattr(self.cfg, "AWAKE_ENABLED", True),
                 "awake_interval_seconds": getattr(self.cfg, "AWAKE_INTERVAL_SECONDS", 540.0),
+                "advanced_security_enabled": getattr(self.cfg, "ADVANCED_SECURITY_ENABLED", True),
+                "identity_protection_mode": getattr(self.cfg, "IDENTITY_PROTECTION_MODE", "strict"),
+                "strict_input_validation": getattr(self.cfg, "STRICT_INPUT_VALIDATION", True),
+                "credit_check_enabled": getattr(self.cfg, "CREDIT_CHECK_ENABLED", True),
+                "default_client_credits": getattr(self.cfg, "DEFAULT_CLIENT_CREDITS", 1000),
+                "credits_per_proxy_request": getattr(self.cfg, "CREDITS_PER_PROXY_REQUEST", 1),
+                "credits_per_queue_request": getattr(self.cfg, "CREDITS_PER_QUEUE_REQUEST", 2),
             }
             if "rate_limit_rps" in payload and payload["rate_limit_rps"] != "":
                 try:
@@ -263,6 +310,29 @@ class PersistenceManager:
             if "awake_interval_seconds" in payload and payload["awake_interval_seconds"] != "":
                 try:
                     settings_json_payload["awake_interval_seconds"] = float(payload["awake_interval_seconds"])
+                except (ValueError, TypeError):
+                    pass
+            if "advanced_security_enabled" in payload:
+                settings_json_payload["advanced_security_enabled"] = bool(payload["advanced_security_enabled"])
+            if "identity_protection_mode" in payload and payload["identity_protection_mode"]:
+                settings_json_payload["identity_protection_mode"] = str(payload["identity_protection_mode"]).strip()
+            if "strict_input_validation" in payload:
+                settings_json_payload["strict_input_validation"] = bool(payload["strict_input_validation"])
+            if "credit_check_enabled" in payload:
+                settings_json_payload["credit_check_enabled"] = bool(payload["credit_check_enabled"])
+            if "default_client_credits" in payload and payload["default_client_credits"] != "":
+                try:
+                    settings_json_payload["default_client_credits"] = int(payload["default_client_credits"])
+                except (ValueError, TypeError):
+                    pass
+            if "credits_per_proxy_request" in payload and payload["credits_per_proxy_request"] != "":
+                try:
+                    settings_json_payload["credits_per_proxy_request"] = int(payload["credits_per_proxy_request"])
+                except (ValueError, TypeError):
+                    pass
+            if "credits_per_queue_request" in payload and payload["credits_per_queue_request"] != "":
+                try:
+                    settings_json_payload["credits_per_queue_request"] = int(payload["credits_per_queue_request"])
                 except (ValueError, TypeError):
                     pass
 
@@ -296,6 +366,30 @@ class PersistenceManager:
                 except (ValueError, TypeError):
                     pass
 
+            if "advanced_security_enabled" in payload:
+                self.cfg.ADVANCED_SECURITY_ENABLED = bool(payload["advanced_security_enabled"])
+            if "identity_protection_mode" in payload and payload["identity_protection_mode"]:
+                self.cfg.IDENTITY_PROTECTION_MODE = str(payload["identity_protection_mode"]).strip()
+            if "strict_input_validation" in payload:
+                self.cfg.STRICT_INPUT_VALIDATION = bool(payload["strict_input_validation"])
+            if "credit_check_enabled" in payload:
+                self.cfg.CREDIT_CHECK_ENABLED = bool(payload["credit_check_enabled"])
+            if "default_client_credits" in payload and payload["default_client_credits"] != "":
+                try:
+                    self.cfg.DEFAULT_CLIENT_CREDITS = int(payload["default_client_credits"])
+                except (ValueError, TypeError):
+                    pass
+            if "credits_per_proxy_request" in payload and payload["credits_per_proxy_request"] != "":
+                try:
+                    self.cfg.CREDITS_PER_PROXY_REQUEST = int(payload["credits_per_proxy_request"])
+                except (ValueError, TypeError):
+                    pass
+            if "credits_per_queue_request" in payload and payload["credits_per_queue_request"] != "":
+                try:
+                    self.cfg.CREDITS_PER_QUEUE_REQUEST = int(payload["credits_per_queue_request"])
+                except (ValueError, TypeError):
+                    pass
+
             # Mirror to os.environ
             for k, v in env_updates.items():
                 os.environ[k] = v
@@ -322,6 +416,29 @@ class PersistenceManager:
                     interval_seconds=self.cfg.AWAKE_INTERVAL_SECONDS,
                 )
                 logger.info("AWAKE", f"Awake Engine hot-synced (enabled: {self.cfg.AWAKE_ENABLED}, interval: {self.cfg.AWAKE_INTERVAL_SECONDS}s)")
+
+            # 8. Hot-sync Advanced Security & Credit Systems
+            if self.identity_guard and hasattr(self.identity_guard, "update_config"):
+                self.identity_guard.update_config(
+                    enabled=self.cfg.ADVANCED_SECURITY_ENABLED,
+                    mode=self.cfg.IDENTITY_PROTECTION_MODE,
+                )
+                logger.security(f"Identity Guard hot-synced (enabled: {self.cfg.ADVANCED_SECURITY_ENABLED}, mode: {self.cfg.IDENTITY_PROTECTION_MODE})")
+
+            if self.input_guard and hasattr(self.input_guard, "update_config"):
+                self.input_guard.update_config(
+                    enabled=self.cfg.STRICT_INPUT_VALIDATION,
+                )
+                logger.security(f"Strict Input Validator hot-synced (enabled: {self.cfg.STRICT_INPUT_VALIDATION})")
+
+            if self.credit_manager and hasattr(self.credit_manager, "update_config"):
+                self.credit_manager.update_config(
+                    enabled=self.cfg.CREDIT_CHECK_ENABLED,
+                    default_credits=self.cfg.DEFAULT_CLIENT_CREDITS,
+                    credits_per_proxy=self.cfg.CREDITS_PER_PROXY_REQUEST,
+                    credits_per_queue=self.cfg.CREDITS_PER_QUEUE_REQUEST,
+                )
+                logger.info("CREDITS", f"Credit Manager hot-synced (enabled: {self.cfg.CREDIT_CHECK_ENABLED}, default: {self.cfg.DEFAULT_CLIENT_CREDITS})")
 
             logger.info("CONFIG", "Persistence Manager: Settings successfully saved and synced across all subsystems.")
 
