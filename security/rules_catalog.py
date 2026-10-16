@@ -437,3 +437,4 @@ RULES_CATALOG["SEC-0431"] = {"id": "SEC-0431", "category": "input_guard", "sever
 RULES_CATALOG["SEC-0432"] = {"id": "SEC-0432", "category": "input_guard", "severity": "HIGH", "description": "enforce valid alphanumeric identifier schema for table names (variant 5)", "active": True}
 RULES_CATALOG["SEC-0433"] = {"id": "SEC-0433", "category": "input_guard", "severity": "HIGH", "description": "enforce valid alphanumeric identifier schema for column names (variant 5)", "active": True}
 RULES_CATALOG["SEC-0434"] = {"id": "SEC-0434", "category": "input_guard", "severity": "HIGH", "description": "block bash command execution chaining in payload parameters (variant 5)", "active": True}
+RULES_CATALOG["SEC-0435"] = {"id": "SEC-0435", "category": "input_guard", "severity": "HIGH", "description": "block curl and wget command execution heuristics (variant 5)", "active": True}
