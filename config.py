@@ -161,6 +161,20 @@ if _initial_settings:
         _apply_setting_val("BLAST_AWAKE_PING_SUPABASE", str(_initial_settings["awake_ping_supabase"]).lower())
     if "awake_ping_peers" in _initial_settings:
         _apply_setting_val("BLAST_AWAKE_PING_PEERS", str(_initial_settings["awake_ping_peers"]).lower())
+    if "advanced_security_enabled" in _initial_settings:
+        _apply_setting_val("BLAST_ADVANCED_SECURITY_ENABLED", str(_initial_settings["advanced_security_enabled"]).lower())
+    if "identity_protection_mode" in _initial_settings:
+        _apply_setting_val("BLAST_IDENTITY_PROTECTION_MODE", str(_initial_settings["identity_protection_mode"]))
+    if "strict_input_validation" in _initial_settings:
+        _apply_setting_val("BLAST_STRICT_INPUT_VALIDATION", str(_initial_settings["strict_input_validation"]).lower())
+    if "credit_check_enabled" in _initial_settings:
+        _apply_setting_val("BLAST_CREDIT_CHECK_ENABLED", str(_initial_settings["credit_check_enabled"]).lower())
+    if "default_client_credits" in _initial_settings:
+        _apply_setting_val("BLAST_DEFAULT_CLIENT_CREDITS", str(_initial_settings["default_client_credits"]))
+    if "credits_per_proxy_request" in _initial_settings:
+        _apply_setting_val("BLAST_CREDITS_PER_PROXY_REQUEST", str(_initial_settings["credits_per_proxy_request"]))
+    if "credits_per_queue_request" in _initial_settings:
+        _apply_setting_val("BLAST_CREDITS_PER_QUEUE_REQUEST", str(_initial_settings["credits_per_queue_request"]))
 
 
 # Automatically load .env file if present
@@ -331,6 +345,13 @@ class BlastConfig:
 
     # Security settings
     REQUIRE_API_KEY: bool = os.getenv("BLAST_REQUIRE_API_KEY", "true").lower() in ("true", "1", "yes")
+    ADVANCED_SECURITY_ENABLED: bool = os.getenv("BLAST_ADVANCED_SECURITY_ENABLED", "true").lower() in ("true", "1", "yes")
+    IDENTITY_PROTECTION_MODE: str = os.getenv("BLAST_IDENTITY_PROTECTION_MODE", "strict")
+    STRICT_INPUT_VALIDATION: bool = os.getenv("BLAST_STRICT_INPUT_VALIDATION", "true").lower() in ("true", "1", "yes")
+    CREDIT_CHECK_ENABLED: bool = os.getenv("BLAST_CREDIT_CHECK_ENABLED", "true").lower() in ("true", "1", "yes")
+    DEFAULT_CLIENT_CREDITS: int = int(os.getenv("BLAST_DEFAULT_CLIENT_CREDITS", "1000"))
+    CREDITS_PER_PROXY_REQUEST: int = int(os.getenv("BLAST_CREDITS_PER_PROXY_REQUEST", "1"))
+    CREDITS_PER_QUEUE_REQUEST: int = int(os.getenv("BLAST_CREDITS_PER_QUEUE_REQUEST", "2"))
     CLUSTER_SECRET: str = field(
         default_factory=lambda: os.getenv("BLAST_CLUSTER_SECRET") or load_settings().get("blast_cluster_secret") or "https://sas-the-treasure-grape-xr-prototype.onrender.com/"
     )
