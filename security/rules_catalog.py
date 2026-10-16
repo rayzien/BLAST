@@ -90,3 +90,4 @@ RULES_CATALOG["SEC-0084"] = {"id": "SEC-0084", "category": "credits_quota", "sev
 RULES_CATALOG["SEC-0085"] = {"id": "SEC-0085", "category": "credits_quota", "severity": "MEDIUM", "description": "track cumulative lifetime credits consumed per client identity", "active": True}
 RULES_CATALOG["SEC-0086"] = {"id": "SEC-0086", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate eq equality PostgREST operator syntax", "active": True}
 RULES_CATALOG["SEC-0087"] = {"id": "SEC-0087", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate neq inequality PostgREST operator syntax", "active": True}
+RULES_CATALOG["SEC-0088"] = {"id": "SEC-0088", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate gt greater-than PostgREST operator syntax", "active": True}
