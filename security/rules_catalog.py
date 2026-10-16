@@ -383,3 +383,4 @@ RULES_CATALOG["SEC-0377"] = {"id": "SEC-0377", "category": "postgrest_api", "sev
 RULES_CATALOG["SEC-0378"] = {"id": "SEC-0378", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate not negation operator prefix syntax (variant 4)", "active": True}
 RULES_CATALOG["SEC-0379"] = {"id": "SEC-0379", "category": "sql_injection", "severity": "CRITICAL", "description": "detect stacked SQL queries with semicolon execution (variant 5)", "active": True}
 RULES_CATALOG["SEC-0380"] = {"id": "SEC-0380", "category": "sql_injection", "severity": "CRITICAL", "description": "detect union-based data extraction sequence (variant 5)", "active": True}
+RULES_CATALOG["SEC-0381"] = {"id": "SEC-0381", "category": "sql_injection", "severity": "CRITICAL", "description": "detect blind boolean-based injection heuristic (variant 5)", "active": True}
