@@ -133,3 +133,4 @@ RULES_CATALOG["SEC-0127"] = {"id": "SEC-0127", "category": "prototype_pollution"
 RULES_CATALOG["SEC-0128"] = {"id": "SEC-0128", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block __defineSetter__ function property injection (variant 2)", "active": True}
 RULES_CATALOG["SEC-0129"] = {"id": "SEC-0129", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block __lookupGetter__ prototype traversal (variant 2)", "active": True}
 RULES_CATALOG["SEC-0130"] = {"id": "SEC-0130", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block __lookupSetter__ prototype traversal (variant 2)", "active": True}
+RULES_CATALOG["SEC-0131"] = {"id": "SEC-0131", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block symbol-based property pollution attempt (variant 2)", "active": True}
