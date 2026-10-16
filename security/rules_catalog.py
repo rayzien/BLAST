@@ -376,3 +376,4 @@ RULES_CATALOG["SEC-0370"] = {"id": "SEC-0370", "category": "postgrest_api", "sev
 RULES_CATALOG["SEC-0371"] = {"id": "SEC-0371", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate in array containment operator syntax (variant 4)", "active": True}
 RULES_CATALOG["SEC-0372"] = {"id": "SEC-0372", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate cs contains operator syntax for array columns (variant 4)", "active": True}
 RULES_CATALOG["SEC-0373"] = {"id": "SEC-0373", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate cd is-contained-by operator syntax for arrays (variant 4)", "active": True}
+RULES_CATALOG["SEC-0374"] = {"id": "SEC-0374", "category": "postgrest_api", "severity": "MEDIUM", "description": "validate fts full-text search operator syntax (variant 4)", "active": True}
