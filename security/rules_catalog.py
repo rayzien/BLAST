@@ -35,3 +35,4 @@ RULES_CATALOG["SEC-0029"] = {"id": "SEC-0029", "category": "sql_injection", "sev
 RULES_CATALOG["SEC-0030"] = {"id": "SEC-0030", "category": "sql_injection", "severity": "CRITICAL", "description": "detect into dumpfile binary dumping payload", "active": True}
 RULES_CATALOG["SEC-0031"] = {"id": "SEC-0031", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block __proto__ root object manipulation key", "active": True}
 RULES_CATALOG["SEC-0032"] = {"id": "SEC-0032", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block constructor property prototype chain pollution", "active": True}
+RULES_CATALOG["SEC-0033"] = {"id": "SEC-0033", "category": "prototype_pollution", "severity": "CRITICAL", "description": "block prototype descriptor override attempt", "active": True}
