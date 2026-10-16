@@ -417,3 +417,4 @@ RULES_CATALOG["SEC-0411"] = {"id": "SEC-0411", "category": "identity_protection"
 RULES_CATALOG["SEC-0412"] = {"id": "SEC-0412", "category": "identity_protection", "severity": "HIGH", "description": "strip spoofed X-User-Id user context header (variant 5)", "active": True}
 RULES_CATALOG["SEC-0413"] = {"id": "SEC-0413", "category": "identity_protection", "severity": "HIGH", "description": "strip spoofed X-Remote-User authentication header (variant 5)", "active": True}
 RULES_CATALOG["SEC-0414"] = {"id": "SEC-0414", "category": "identity_protection", "severity": "HIGH", "description": "strip spoofed X-Forwarded-User proxy header (variant 5)", "active": True}
+RULES_CATALOG["SEC-0415"] = {"id": "SEC-0415", "category": "identity_protection", "severity": "HIGH", "description": "strip spoofed X-Authenticated-User role header (variant 5)", "active": True}
