@@ -57,3 +57,4 @@ RULES_CATALOG["SEC-0051"] = {"id": "SEC-0051", "category": "identity_protection"
 RULES_CATALOG["SEC-0052"] = {"id": "SEC-0052", "category": "identity_protection", "severity": "HIGH", "description": "validate user-agent device family consistency", "active": True}
 RULES_CATALOG["SEC-0053"] = {"id": "SEC-0053", "category": "identity_protection", "severity": "HIGH", "description": "reject anonymous identity assumption in strict mode", "active": True}
 RULES_CATALOG["SEC-0054"] = {"id": "SEC-0054", "category": "identity_protection", "severity": "HIGH", "description": "bind client identity to authorized API key prefix", "active": True}
+RULES_CATALOG["SEC-0055"] = {"id": "SEC-0055", "category": "identity_protection", "severity": "HIGH", "description": "validate constant-time digest comparison to prevent timing leaks", "active": True}
