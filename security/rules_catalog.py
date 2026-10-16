@@ -430,3 +430,4 @@ RULES_CATALOG["SEC-0424"] = {"id": "SEC-0424", "category": "input_guard", "sever
 RULES_CATALOG["SEC-0425"] = {"id": "SEC-0425", "category": "input_guard", "severity": "HIGH", "description": "enforce maximum JSON object property count limit of 150 (variant 5)", "active": True}
 RULES_CATALOG["SEC-0426"] = {"id": "SEC-0426", "category": "input_guard", "severity": "HIGH", "description": "enforce maximum JSON array elements count limit of 1000 (variant 5)", "active": True}
 RULES_CATALOG["SEC-0427"] = {"id": "SEC-0427", "category": "input_guard", "severity": "HIGH", "description": "block unescaped ASCII control characters 0x00 through 0x1f (variant 5)", "active": True}
+RULES_CATALOG["SEC-0428"] = {"id": "SEC-0428", "category": "input_guard", "severity": "HIGH", "description": "block null byte sequence in URL path components (variant 5)", "active": True}
