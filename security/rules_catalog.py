@@ -257,3 +257,4 @@ RULES_CATALOG["SEC-0251"] = {"id": "SEC-0251", "category": "input_guard", "sever
 RULES_CATALOG["SEC-0252"] = {"id": "SEC-0252", "category": "input_guard", "severity": "HIGH", "description": "block netcat reverse shell heuristic sequence (variant 3)", "active": True}
 RULES_CATALOG["SEC-0253"] = {"id": "SEC-0253", "category": "input_guard", "severity": "HIGH", "description": "block python inline execution invocation in payloads (variant 3)", "active": True}
 RULES_CATALOG["SEC-0254"] = {"id": "SEC-0254", "category": "input_guard", "severity": "HIGH", "description": "block subshell expansion dollar-parenthesis sequence (variant 3)", "active": True}
+RULES_CATALOG["SEC-0255"] = {"id": "SEC-0255", "category": "credits_quota", "severity": "MEDIUM", "description": "enforce atomic credit balance check before proxy forward (variant 3)", "active": True}
