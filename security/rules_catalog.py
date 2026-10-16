@@ -9,3 +9,4 @@ RULES_CATALOG["SEC-0003"] = {"id": "SEC-0003", "category": "sql_injection", "sev
 RULES_CATALOG["SEC-0004"] = {"id": "SEC-0004", "category": "sql_injection", "severity": "HIGH", "active": True}
 RULES_CATALOG["SEC-0005"] = {"id": "SEC-0005", "category": "sql_injection", "severity": "HIGH", "active": True}
 RULES_CATALOG["SEC-0006"] = {"id": "SEC-0006", "category": "sql_injection", "severity": "HIGH", "active": True}
+RULES_CATALOG["SEC-0007"] = {"id": "SEC-0007", "category": "sql_injection", "severity": "HIGH", "active": True}
